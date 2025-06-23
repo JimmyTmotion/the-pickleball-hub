@@ -1,10 +1,12 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, Users, Clock, TrendingUp } from 'lucide-react';
+import { Calendar, Users, Clock, TrendingUp, Download } from 'lucide-react';
 import { Schedule } from '@/types/schedule';
+import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 
 interface ScheduleDisplayProps {
   schedule: Schedule;
@@ -23,15 +25,38 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
     return acc;
   }, {} as Record<string, typeof matches>);
 
+  const handleDownloadCSV = () => {
+    const csvContent = exportScheduleToCSV(schedule);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'pickleball-schedule.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       {/* Schedule Overview */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl font-bold text-blue-700">
-            <Calendar className="h-6 w-6" />
-            Match Schedule
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-2xl font-bold text-blue-700">
+              <Calendar className="h-6 w-6" />
+              Match Schedule
+            </CardTitle>
+            <Button
+              onClick={handleDownloadCSV}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">

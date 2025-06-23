@@ -18,6 +18,7 @@ export interface ScheduleConfig {
   matchLength: number; // minutes
   numPlayers: number;
   numCourts: number;
+  playerNames?: string[]; // Optional custom player names
 }
 
 export interface Schedule {

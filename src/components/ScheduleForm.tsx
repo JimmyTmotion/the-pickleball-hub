@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Users, MapPin } from 'lucide-react';
 import { ScheduleConfig } from '@/types/schedule';
@@ -20,10 +21,24 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
     numPlayers: 8,
     numCourts: 2
   });
+  
+  const [playerNamesText, setPlayerNamesText] = React.useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onGenerateSchedule(config);
+    
+    // Parse player names from textarea
+    const playerNames = playerNamesText
+      .split('\n')
+      .map(name => name.trim())
+      .filter(name => name.length > 0);
+    
+    const configWithNames = {
+      ...config,
+      playerNames: playerNames.length > 0 ? playerNames : undefined
+    };
+    
+    onGenerateSchedule(configWithNames);
   };
 
   const updateConfig = (field: keyof ScheduleConfig, value: string | number) => {
@@ -117,6 +132,22 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                   className="mt-1"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="playerNames" className="text-sm font-medium">
+                Player Names (optional)
+              </Label>
+              <Textarea
+                id="playerNames"
+                placeholder="Enter player names, one per line&#10;John Smith&#10;Jane Doe&#10;Mike Johnson&#10;..."
+                value={playerNamesText}
+                onChange={(e) => setPlayerNamesText(e.target.value)}
+                className="mt-1 min-h-[100px]"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Leave empty to use default names (Player 1, Player 2, etc.)
+              </p>
             </div>
           </div>
 

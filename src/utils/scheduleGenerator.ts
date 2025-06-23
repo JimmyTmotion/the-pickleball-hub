@@ -2,12 +2,12 @@
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
-  const { sessionStart, sessionEnd, matchLength, numPlayers, numCourts } = config;
+  const { sessionStart, sessionEnd, matchLength, numPlayers, numCourts, playerNames } = config;
   
-  // Generate players
+  // Generate players with custom names if provided
   const players: Player[] = Array.from({ length: numPlayers }, (_, i) => ({
     id: i + 1,
-    name: `Player ${i + 1}`
+    name: playerNames && playerNames[i] ? playerNames[i] : `Player ${i + 1}`
   }));
 
   // Calculate time slots
@@ -20,11 +20,13 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   const playerMatchCount = new Map<number, number>();
   const playerLastPlayed = new Map<number, number>();
   const partnershipCount = new Map<string, number>(); // Track how many times players have been partners
+  const playerCourtHistory = new Map<number, Set<number>>(); // Track which courts each player has played on
   
   // Initialize player stats
   players.forEach(player => {
     playerMatchCount.set(player.id, 0);
     playerLastPlayed.set(player.id, -2); // Allow them to play in first round
+    playerCourtHistory.set(player.id, new Set());
   });
 
   // Helper function to create partnership key
@@ -38,10 +40,22 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     return partnershipCount.get(key) || 0;
   };
 
-  // Helper function to find best team pairing with least used partnerships
-  const findBestTeamPairing = (availablePlayers: Player[]) => {
+  // Helper function to calculate court diversity score for a group of players
+  const calculateCourtDiversityScore = (players: Player[], court: number) => {
+    let score = 0;
+    players.forEach(player => {
+      const courtsPlayed = playerCourtHistory.get(player.id) || new Set();
+      if (!courtsPlayed.has(court)) {
+        score += 10; // Bonus for playing on a new court
+      }
+    });
+    return score;
+  };
+
+  // Helper function to find best team pairing with least used partnerships and court diversity
+  const findBestTeamPairing = (availablePlayers: Player[], court: number) => {
     let bestPairing = null;
-    let lowestPartnershipSum = Infinity;
+    let bestScore = -Infinity;
 
     // Try all possible team combinations (2 players per team)
     for (let i = 0; i < availablePlayers.length - 3; i++) {
@@ -50,15 +64,26 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
           for (let l = k + 1; l < availablePlayers.length; l++) {
             const team1 = [availablePlayers[i], availablePlayers[j]];
             const team2 = [availablePlayers[k], availablePlayers[l]];
+            const allPlayers = [...team1, ...team2];
             
-            // Calculate total partnership count for this pairing
+            // Calculate partnership score (lower partnership count is better)
             const team1PartnershipCount = getPartnershipCount(team1[0].id, team1[1].id);
             const team2PartnershipCount = getPartnershipCount(team2[0].id, team2[1].id);
-            const totalPartnershipCount = team1PartnershipCount + team2PartnershipCount;
+            const partnershipScore = -(team1PartnershipCount + team2PartnershipCount) * 100;
             
-            if (totalPartnershipCount < lowestPartnershipSum) {
-              lowestPartnershipSum = totalPartnershipCount;
-              bestPairing = [...team1, ...team2];
+            // Calculate court diversity score (higher is better)
+            const courtDiversityScore = calculateCourtDiversityScore(allPlayers, court);
+            
+            // Calculate match count balance score (prefer players with fewer matches)
+            const matchCountScore = allPlayers.reduce((sum, player) => {
+              return sum - (playerMatchCount.get(player.id) || 0);
+            }, 0) * 10;
+            
+            const totalScore = partnershipScore + courtDiversityScore + matchCountScore;
+            
+            if (totalScore > bestScore) {
+              bestScore = totalScore;
+              bestPairing = allPlayers;
             }
           }
         }
@@ -86,7 +111,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     // Assign players to courts (4 players per court for doubles)
     const playersPerMatch = 4;
     for (let court = 0; court < numCourts && availablePlayers.length >= playersPerMatch; court++) {
-      const matchPlayers = findBestTeamPairing(availablePlayers);
+      const matchPlayers = findBestTeamPairing(availablePlayers, court + 1);
       
       if (matchPlayers && matchPlayers.length === 4) {
         // Remove selected players from available list
@@ -113,6 +138,10 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
         matchPlayers.forEach(player => {
           playerMatchCount.set(player.id, (playerMatchCount.get(player.id) || 0) + 1);
           playerLastPlayed.set(player.id, round);
+          // Track court usage
+          const courtsPlayed = playerCourtHistory.get(player.id) || new Set();
+          courtsPlayed.add(court + 1);
+          playerCourtHistory.set(player.id, courtsPlayed);
         });
 
         // Update partnership counts (first two players are partners, last two are partners)
@@ -133,4 +162,25 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   }));
 
   return { matches, playerStats };
+};
+
+export const exportScheduleToCSV = (schedule: Schedule): string => {
+  const headers = ['Match ID', 'Court', 'Start Time', 'End Time', 'Team 1 Player 1', 'Team 1 Player 2', 'Team 2 Player 1', 'Team 2 Player 2'];
+  
+  const rows = schedule.matches.map(match => [
+    match.id.toString(),
+    match.court.toString(),
+    match.startTime,
+    match.endTime,
+    match.players[0]?.name || '',
+    match.players[1]?.name || '',
+    match.players[2]?.name || '',
+    match.players[3]?.name || ''
+  ]);
+  
+  const csvContent = [headers, ...rows]
+    .map(row => row.map(cell => `"${cell}"`).join(','))
+    .join('\n');
+  
+  return csvContent;
 };
