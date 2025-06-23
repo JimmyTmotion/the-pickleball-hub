@@ -75,7 +75,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
               <Input
                 id="matchLength"
                 type="number"
-                min="15"
+                min="5"
                 max="60"
                 value={config.matchLength}
                 onChange={(e) => updateConfig('matchLength', parseInt(e.target.value))}
