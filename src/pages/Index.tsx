@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import ScheduleForm from '@/components/ScheduleForm';
 import ScheduleDisplay from '@/components/ScheduleDisplay';
 import { generateSchedule } from '@/utils/scheduleGenerator';
 import { Schedule, ScheduleConfig } from '@/types/schedule';
 import { toast } from '@/hooks/use-toast';
-import { Zap } from 'lucide-react';
+import { Zap, Users, Clock, TrendingUp } from 'lucide-react';
 
 const Index = () => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
