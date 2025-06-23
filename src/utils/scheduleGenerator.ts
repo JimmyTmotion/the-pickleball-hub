@@ -10,7 +10,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     name: playerNames && playerNames[i] ? playerNames[i] : `Player ${i + 1}`
   }));
 
-  // Calculate time slots
+  // Calculate number of rounds
   const startTime = new Date(`2024-01-01T${sessionStart}`);
   const endTime = new Date(`2024-01-01T${sessionEnd}`);
   const sessionDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // minutes
@@ -94,10 +94,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   };
 
   // Generate matches for each round
-  for (let round = 0; round < numRounds; round++) {
-    const roundStartTime = new Date(startTime.getTime() + round * matchLength * 60000);
-    const roundEndTime = new Date(roundStartTime.getTime() + matchLength * 60000);
-    
+  for (let round = 1; round <= numRounds; round++) {
     // Get available players (those who didn't play in the last round)
     const availablePlayers = players.filter(player => 
       (playerLastPlayed.get(player.id) || -2) < round - 1
@@ -124,14 +121,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
           id: matches.length + 1,
           court: court + 1,
           players: matchPlayers,
-          startTime: roundStartTime.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
-          endTime: roundEndTime.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })
+          round: round
         });
         
         // Update player stats
@@ -157,21 +147,19 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   const playerStats = players.map(player => ({
     playerId: player.id,
     playerName: player.name,
-    matchCount: playerMatchCount.get(player.id) || 0,
-    restTime: (numRounds - (playerMatchCount.get(player.id) || 0)) * matchLength
+    matchCount: playerMatchCount.get(player.id) || 0
   }));
 
   return { matches, playerStats };
 };
 
 export const exportScheduleToCSV = (schedule: Schedule): string => {
-  const headers = ['Match ID', 'Court', 'Start Time', 'End Time', 'Team 1 Player 1', 'Team 1 Player 2', 'Team 2 Player 1', 'Team 2 Player 2'];
+  const headers = ['Match ID', 'Round', 'Court', 'Team 1 Player 1', 'Team 1 Player 2', 'Team 2 Player 1', 'Team 2 Player 2'];
   
   const rows = schedule.matches.map(match => [
     match.id.toString(),
+    match.round.toString(),
     match.court.toString(),
-    match.startTime,
-    match.endTime,
     match.players[0]?.name || '',
     match.players[1]?.name || '',
     match.players[2]?.name || '',

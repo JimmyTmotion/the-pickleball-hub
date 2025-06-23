@@ -8,8 +8,7 @@ export interface Match {
   id: number;
   court: number;
   players: Player[];
-  startTime: string;
-  endTime: string;
+  round: number;
 }
 
 export interface ScheduleConfig {
@@ -27,6 +26,5 @@ export interface Schedule {
     playerId: number;
     playerName: string;
     matchCount: number;
-    restTime: number;
   }[];
 }

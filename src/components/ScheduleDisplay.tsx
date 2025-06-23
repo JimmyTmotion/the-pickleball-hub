@@ -1,29 +1,30 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, Users, Clock, TrendingUp, Download } from 'lucide-react';
+import { Calendar, Users, TrendingUp } from 'lucide-react';
 import { Schedule } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
+import ScheduleDisplayOptions from './ScheduleDisplayOptions';
 
 interface ScheduleDisplayProps {
   schedule: Schedule;
 }
 
 const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
+  const [viewMode, setViewMode] = useState<'standard' | 'printable'>('standard');
   const { matches, playerStats } = schedule;
 
-  // Group matches by time slot
-  const matchesByTime = matches.reduce((acc, match) => {
-    const timeSlot = match.startTime;
-    if (!acc[timeSlot]) {
-      acc[timeSlot] = [];
+  // Group matches by round
+  const matchesByRound = matches.reduce((acc, match) => {
+    const round = match.round;
+    if (!acc[round]) {
+      acc[round] = [];
     }
-    acc[timeSlot].push(match);
+    acc[round].push(match);
     return acc;
-  }, {} as Record<string, typeof matches>);
+  }, {} as Record<number, typeof matches>);
 
   const handleDownloadCSV = () => {
     const csvContent = exportScheduleToCSV(schedule);
@@ -38,39 +39,103 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
     document.body.removeChild(link);
   };
 
+  if (viewMode === 'printable') {
+    return (
+      <div className="space-y-6">
+        <ScheduleDisplayOptions
+          onViewChange={setViewMode}
+          onDownloadCSV={handleDownloadCSV}
+          currentView={viewMode}
+        />
+        
+        <div className="print:block">
+          <div className="text-center mb-8 print:mb-4">
+            <h1 className="text-4xl font-bold text-gray-900 print:text-black">
+              Pickleball Schedule
+            </h1>
+          </div>
+
+          <div className="space-y-8 print:space-y-6">
+            {Object.entries(matchesByRound).map(([round, roundMatches]) => (
+              <div key={round} className="break-inside-avoid">
+                <h2 className="text-3xl font-bold text-gray-900 print:text-black mb-4 print:mb-3 border-b-2 border-gray-300 pb-2">
+                  Round {round}
+                </h2>
+                
+                <div className="grid gap-4 print:gap-3 md:grid-cols-2 lg:grid-cols-3 print:grid-cols-2">
+                  {roundMatches.map((match) => (
+                    <div 
+                      key={match.id} 
+                      className="border-2 border-gray-300 rounded-lg p-4 print:p-3 bg-white print:break-inside-avoid"
+                    >
+                      <div className="text-center mb-3 print:mb-2">
+                        <div className="text-2xl font-bold text-gray-900 print:text-black mb-1">
+                          Court {match.court}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3 print:space-y-2">
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-blue-700 print:text-black mb-2 print:mb-1">
+                            Team 1
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-xl font-medium print:text-lg">{match.players[0]?.name}</div>
+                            <div className="text-xl font-medium print:text-lg">{match.players[1]?.name}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="text-center text-2xl font-bold text-gray-600 print:text-black">
+                          VS
+                        </div>
+                        
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-orange-700 print:text-black mb-2 print:mb-1">
+                            Team 2
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-xl font-medium print:text-lg">{match.players[2]?.name}</div>
+                            <div className="text-xl font-medium print:text-lg">{match.players[3]?.name}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      <ScheduleDisplayOptions
+        onViewChange={setViewMode}
+        onDownloadCSV={handleDownloadCSV}
+        currentView={viewMode}
+      />
+
       {/* Schedule Overview */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-2xl font-bold text-blue-700">
-              <Calendar className="h-6 w-6" />
-              Match Schedule
-            </CardTitle>
-            <Button
-              onClick={handleDownloadCSV}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download CSV
-            </Button>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-2xl font-bold text-blue-700">
+            <Calendar className="h-6 w-6" />
+            Match Schedule
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {Object.entries(matchesByTime).map(([timeSlot, timeMatches]) => (
-              <div key={timeSlot} className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-green-600" />
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {timeSlot} - {timeMatches[0]?.endTime}
-                  </h3>
-                </div>
+            {Object.entries(matchesByRound).map(([round, roundMatches]) => (
+              <div key={round} className="space-y-3">
+                <h3 className="text-xl font-semibold text-gray-800">
+                  Round {round}
+                </h3>
                 
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {timeMatches.map((match) => (
+                  {roundMatches.map((match) => (
                     <Card key={match.id} className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-3">
@@ -103,7 +168,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
                   ))}
                 </div>
                 
-                {Object.keys(matchesByTime).length > 1 && (
+                {Object.keys(matchesByRound).length > 1 && (
                   <Separator className="my-4" />
                 )}
               </div>
@@ -136,10 +201,6 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Matches:</span>
                       <Badge variant="secondary">{stat.matchCount}</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Rest time:</span>
-                      <span className="text-gray-800">{stat.restTime} min</span>
                     </div>
                   </div>
                 </CardContent>
