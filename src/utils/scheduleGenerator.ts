@@ -21,12 +21,15 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   const playerLastPlayed = new Map<number, number>();
   const partnershipCount = new Map<string, number>(); // Track how many times players have been partners
   const playerCourtHistory = new Map<number, Set<number>>(); // Track which courts each player has played on
+  const recentOpponents = new Map<number, Set<number>>(); // Track recent opponents for each player
+  const courtMateSeparation = new Map<string, number>(); // Track when players last played on same court
   
   // Initialize player stats
   players.forEach(player => {
     playerMatchCount.set(player.id, 0);
     playerLastPlayed.set(player.id, -2); // Allow them to play in first round
     playerCourtHistory.set(player.id, new Set());
+    recentOpponents.set(player.id, new Set());
   });
 
   // Helper function to create partnership key
@@ -52,8 +55,28 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     return score;
   };
 
-  // Helper function to find best team pairing with least used partnerships and court diversity
-  const findBestTeamPairing = (availablePlayers: Player[], court: number) => {
+  // Helper function to calculate separation penalty for players who recently played together
+  const calculateSeparationPenalty = (playerGroup: Player[], currentRound: number) => {
+    let penalty = 0;
+    for (let i = 0; i < playerGroup.length; i++) {
+      for (let j = i + 1; j < playerGroup.length; j++) {
+        const key = getPartnershipKey(playerGroup[i].id, playerGroup[j].id);
+        const lastTogetherRound = courtMateSeparation.get(key) || -5;
+        const roundsSeparated = currentRound - lastTogetherRound;
+        
+        // Heavy penalty if they played together in the last 2 rounds
+        if (roundsSeparated <= 2) {
+          penalty += 1000;
+        } else if (roundsSeparated <= 3) {
+          penalty += 500;
+        }
+      }
+    }
+    return penalty;
+  };
+
+  // Helper function to find best team pairing with better separation logic
+  const findBestTeamPairing = (availablePlayers: Player[], court: number, currentRound: number) => {
     let bestPairing = null;
     let bestScore = -Infinity;
 
@@ -79,7 +102,10 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
               return sum - (playerMatchCount.get(player.id) || 0);
             }, 0) * 10;
             
-            const totalScore = partnershipScore + courtDiversityScore + matchCountScore;
+            // Calculate separation penalty (heavy penalty for recent court mates)
+            const separationPenalty = calculateSeparationPenalty(allPlayers, currentRound);
+            
+            const totalScore = partnershipScore + courtDiversityScore + matchCountScore - separationPenalty;
             
             if (totalScore > bestScore) {
               bestScore = totalScore;
@@ -105,15 +131,18 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
       availablePlayers = [...players];
     }
     
-    // Sort by match count (ascending) to ensure fairness
-    availablePlayers.sort((a, b) => 
-      (playerMatchCount.get(a.id) || 0) - (playerMatchCount.get(b.id) || 0)
-    );
+    // Sort by match count (ascending) and add some randomization to prevent patterns
+    availablePlayers.sort((a, b) => {
+      const matchDiff = (playerMatchCount.get(a.id) || 0) - (playerMatchCount.get(b.id) || 0);
+      if (matchDiff !== 0) return matchDiff;
+      // Add slight randomization to break ties and prevent rigid patterns
+      return Math.random() - 0.5;
+    });
     
     // Assign players to courts (4 players per court for doubles)
     const playersPerMatch = 4;
     for (let court = 0; court < numCourts && availablePlayers.length >= playersPerMatch; court++) {
-      const matchPlayers = findBestTeamPairing(availablePlayers, court + 1);
+      const matchPlayers = findBestTeamPairing(availablePlayers, court + 1, round);
       
       if (matchPlayers && matchPlayers.length === 4) {
         // Remove selected players from available list
@@ -144,6 +173,14 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
         const team2Key = getPartnershipKey(matchPlayers[2].id, matchPlayers[3].id);
         partnershipCount.set(team1Key, (partnershipCount.get(team1Key) || 0) + 1);
         partnershipCount.set(team2Key, (partnershipCount.get(team2Key) || 0) + 1);
+
+        // Update court mate separation tracking - track when any two players were on the same court
+        for (let i = 0; i < matchPlayers.length; i++) {
+          for (let j = i + 1; j < matchPlayers.length; j++) {
+            const key = getPartnershipKey(matchPlayers[i].id, matchPlayers[j].id);
+            courtMateSeparation.set(key, round);
+          }
+        }
       }
     }
   }
