@@ -1,4 +1,3 @@
-
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
@@ -17,6 +16,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   const numRounds = Math.floor(sessionDuration / matchLength);
   
   const matches: Match[] = [];
+  const roundSittingOut: Record<number, Player[]> = {}; // Track who sits out each round
   const playerMatchCount = new Map<number, number>();
   const playerLastPlayed = new Map<number, number>();
   const partnershipCount = new Map<string, number>(); // Track how many times players have been partners
@@ -139,6 +139,8 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
       return Math.random() - 0.5;
     });
     
+    const playersInRound = new Set<number>();
+    
     // Assign players to courts (4 players per court for doubles)
     const playersPerMatch = 4;
     for (let court = 0; court < numCourts && availablePlayers.length >= playersPerMatch; court++) {
@@ -149,6 +151,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
         matchPlayers.forEach(player => {
           const index = availablePlayers.findIndex(p => p.id === player.id);
           if (index > -1) availablePlayers.splice(index, 1);
+          playersInRound.add(player.id);
         });
 
         matches.push({
@@ -183,6 +186,10 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
         }
       }
     }
+    
+    // Track who is sitting out this round
+    const sittingOut = players.filter(player => !playersInRound.has(player.id));
+    roundSittingOut[round] = sittingOut;
   }
 
   // Calculate player statistics
@@ -192,7 +199,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     matchCount: playerMatchCount.get(player.id) || 0
   }));
 
-  return { matches, playerStats };
+  return { matches, playerStats, roundSittingOut };
 };
 
 export const exportScheduleToCSV = (schedule: Schedule): string => {

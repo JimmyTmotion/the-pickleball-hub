@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, Users, TrendingUp } from 'lucide-react';
+import { Calendar, Users, TrendingUp, UserX } from 'lucide-react';
 import { Schedule } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import ScheduleDisplayOptions from './ScheduleDisplayOptions';
@@ -14,7 +13,7 @@ interface ScheduleDisplayProps {
 
 const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
   const [viewMode, setViewMode] = useState<'standard' | 'printable'>('standard');
-  const { matches, playerStats } = schedule;
+  const { matches, playerStats, roundSittingOut } = schedule;
 
   // Group matches by round
   const matchesByRound = matches.reduce((acc, match) => {
@@ -58,9 +57,19 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
           <div className="space-y-8 print:space-y-6">
             {Object.entries(matchesByRound).map(([round, roundMatches]) => (
               <div key={round} className="break-inside-avoid">
-                <h2 className="text-3xl font-bold text-gray-900 print:text-black mb-4 print:mb-3 border-b-2 border-gray-300 pb-2">
-                  Round {round}
-                </h2>
+                <div className="flex items-center justify-between mb-4 print:mb-3">
+                  <h2 className="text-3xl font-bold text-gray-900 print:text-black border-b-2 border-gray-300 pb-2">
+                    Round {round}
+                  </h2>
+                  {roundSittingOut[parseInt(round)] && roundSittingOut[parseInt(round)].length > 0 && (
+                    <div className="text-lg print:text-base">
+                      <span className="font-semibold text-gray-700 print:text-black">Sitting Out: </span>
+                      <span className="text-gray-600 print:text-black">
+                        {roundSittingOut[parseInt(round)].map(p => p.name).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 
                 <div className="grid gap-4 print:gap-3 md:grid-cols-2 lg:grid-cols-3 print:grid-cols-2">
                   {roundMatches.map((match) => (
@@ -130,9 +139,19 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
           <div className="space-y-6">
             {Object.entries(matchesByRound).map(([round, roundMatches]) => (
               <div key={round} className="space-y-3">
-                <h3 className="text-xl font-semibold text-gray-800">
-                  Round {round}
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    Round {round}
+                  </h3>
+                  {roundSittingOut[parseInt(round)] && roundSittingOut[parseInt(round)].length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <UserX className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        Sitting out: {roundSittingOut[parseInt(round)].map(p => p.name).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {roundMatches.map((match) => (

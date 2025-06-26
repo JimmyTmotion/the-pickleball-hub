@@ -27,4 +27,5 @@ export interface Schedule {
     playerName: string;
     matchCount: number;
   }[];
+  roundSittingOut: Record<number, Player[]>; // Track who sits out each round
 }
