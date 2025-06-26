@@ -1,7 +1,34 @@
+
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
+// Simple seeded random number generator
+class SeededRandom {
+  private seed: number;
+
+  constructor(seed: number) {
+    this.seed = seed;
+  }
+
+  next(): number {
+    this.seed = (this.seed * 9301 + 49297) % 233280;
+    return this.seed / 233280;
+  }
+
+  shuffle<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(this.next() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+}
+
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
-  const { sessionStart, sessionEnd, matchLength, numPlayers, numCourts, playerNames } = config;
+  const { sessionStart, sessionEnd, matchLength, numPlayers, numCourts, playerNames, randomSeed } = config;
+  
+  // Initialize random number generator with seed or current time
+  const rng = new SeededRandom(randomSeed || Date.now());
   
   // Generate players with custom names if provided
   const players: Player[] = Array.from({ length: numPlayers }, (_, i) => ({
@@ -75,9 +102,9 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     return penalty;
   };
 
-  // Helper function to find best team pairing with better separation logic
+  // Helper function to find best team pairing with better separation logic and randomization
   const findBestTeamPairing = (availablePlayers: Player[], court: number, currentRound: number) => {
-    let bestPairing = null;
+    const bestPairings: Player[][] = [];
     let bestScore = -Infinity;
 
     // Try all possible team combinations (2 players per team)
@@ -109,14 +136,23 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
             
             if (totalScore > bestScore) {
               bestScore = totalScore;
-              bestPairing = allPlayers;
+              bestPairings.length = 0; // Clear array
+              bestPairings.push(allPlayers);
+            } else if (totalScore === bestScore) {
+              bestPairings.push(allPlayers);
             }
           }
         }
       }
     }
 
-    return bestPairing;
+    // Randomly select from best pairings if multiple have the same score
+    if (bestPairings.length > 0) {
+      const randomIndex = Math.floor(rng.next() * bestPairings.length);
+      return bestPairings[randomIndex];
+    }
+
+    return null;
   };
 
   // Generate matches for each round
@@ -131,13 +167,24 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
       availablePlayers = [...players];
     }
     
-    // Sort by match count (ascending) and add some randomization to prevent patterns
+    // Sort by match count (ascending) and add randomization to prevent patterns
     availablePlayers.sort((a, b) => {
       const matchDiff = (playerMatchCount.get(a.id) || 0) - (playerMatchCount.get(b.id) || 0);
       if (matchDiff !== 0) return matchDiff;
-      // Add slight randomization to break ties and prevent rigid patterns
-      return Math.random() - 0.5;
+      // Add seeded randomization to break ties and prevent rigid patterns
+      return rng.next() - 0.5;
     });
+    
+    // Additional shuffle to increase variability while maintaining fairness priority
+    if (round > 1) {
+      availablePlayers = rng.shuffle(availablePlayers);
+      // Re-sort to maintain fairness for match count, but with some randomness
+      availablePlayers.sort((a, b) => {
+        const matchDiff = (playerMatchCount.get(a.id) || 0) - (playerMatchCount.get(b.id) || 0);
+        if (matchDiff > 1) return matchDiff; // Only enforce strict ordering for significant differences
+        return rng.next() - 0.5;
+      });
+    }
     
     const playersInRound = new Set<number>();
     

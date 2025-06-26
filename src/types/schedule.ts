@@ -18,6 +18,7 @@ export interface ScheduleConfig {
   numPlayers: number;
   numCourts: number;
   playerNames?: string[]; // Optional custom player names
+  randomSeed?: number; // Optional random seed for variability
 }
 
 export interface Schedule {

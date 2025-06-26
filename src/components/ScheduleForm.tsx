@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Users, MapPin } from 'lucide-react';
+import { Clock, Users, MapPin, Shuffle } from 'lucide-react';
 import { ScheduleConfig } from '@/types/schedule';
 
 interface ScheduleFormProps {
@@ -35,7 +35,8 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
     
     const configWithNames = {
       ...config,
-      playerNames: playerNames.length > 0 ? playerNames : undefined
+      playerNames: playerNames.length > 0 ? playerNames : undefined,
+      randomSeed: Math.floor(Math.random() * 1000000) // Generate random seed each time
     };
     
     onGenerateSchedule(configWithNames);
@@ -156,6 +157,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
             className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105"
             disabled={isLoading}
           >
+            <Shuffle className="h-4 w-4 mr-2" />
             {isLoading ? 'Generating...' : 'Generate Schedule'}
           </Button>
         </form>
