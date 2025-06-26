@@ -95,10 +95,15 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
 
   // Generate matches for each round
   for (let round = 1; round <= numRounds; round++) {
-    // Get available players (those who didn't play in the last round)
-    const availablePlayers = players.filter(player => 
+    // Get available players - be less restrictive to ensure we don't skip rounds
+    let availablePlayers = players.filter(player => 
       (playerLastPlayed.get(player.id) || -2) < round - 1
     );
+    
+    // If we don't have enough players, include players who played in the previous round
+    if (availablePlayers.length < numCourts * 4) {
+      availablePlayers = [...players];
+    }
     
     // Sort by match count (ascending) to ensure fairness
     availablePlayers.sort((a, b) => 
