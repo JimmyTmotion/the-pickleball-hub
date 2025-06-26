@@ -102,7 +102,33 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     return penalty;
   };
 
-  // Helper function to find best team pairing with better separation logic and randomization
+  // Helper function to calculate match count balance score (heavily weighted)
+  const calculateMatchCountBalance = (playerGroup: Player[]) => {
+    const matchCounts = playerGroup.map(p => playerMatchCount.get(p.id) || 0);
+    const totalMatches = matchCounts.reduce((sum, count) => sum + count, 0);
+    const avgMatches = totalMatches / playerGroup.length;
+    
+    // Heavily penalize groups where players have significantly different match counts
+    let balanceScore = 0;
+    matchCounts.forEach(count => {
+      const diff = Math.abs(count - avgMatches);
+      balanceScore -= diff * 500; // Heavy penalty for imbalance
+    });
+    
+    // Extra bonus for selecting players with the lowest match counts
+    const minMatchCount = Math.min(...Array.from(playerMatchCount.values()));
+    matchCounts.forEach(count => {
+      if (count === minMatchCount) {
+        balanceScore += 200; // Bonus for selecting players with minimum matches
+      } else if (count === minMatchCount + 1) {
+        balanceScore += 100; // Smaller bonus for players with one more match
+      }
+    });
+    
+    return balanceScore;
+  };
+
+  // Helper function to find best team pairing with enhanced balance prioritization
   const findBestTeamPairing = (availablePlayers: Player[], court: number, currentRound: number) => {
     const bestPairings: Player[][] = [];
     let bestScore = -Infinity;
@@ -116,23 +142,22 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
             const team2 = [availablePlayers[k], availablePlayers[l]];
             const allPlayers = [...team1, ...team2];
             
+            // Calculate match count balance score (highest priority)
+            const matchCountBalance = calculateMatchCountBalance(allPlayers);
+            
             // Calculate partnership score (lower partnership count is better)
             const team1PartnershipCount = getPartnershipCount(team1[0].id, team1[1].id);
             const team2PartnershipCount = getPartnershipCount(team2[0].id, team2[1].id);
-            const partnershipScore = -(team1PartnershipCount + team2PartnershipCount) * 100;
+            const partnershipScore = -(team1PartnershipCount + team2PartnershipCount) * 50;
             
             // Calculate court diversity score (higher is better)
             const courtDiversityScore = calculateCourtDiversityScore(allPlayers, court);
             
-            // Calculate match count balance score (prefer players with fewer matches)
-            const matchCountScore = allPlayers.reduce((sum, player) => {
-              return sum - (playerMatchCount.get(player.id) || 0);
-            }, 0) * 10;
-            
             // Calculate separation penalty (heavy penalty for recent court mates)
             const separationPenalty = calculateSeparationPenalty(allPlayers, currentRound);
             
-            const totalScore = partnershipScore + courtDiversityScore + matchCountScore - separationPenalty;
+            // Match count balance is the most important factor
+            const totalScore = matchCountBalance + partnershipScore + courtDiversityScore - separationPenalty;
             
             if (totalScore > bestScore) {
               bestScore = totalScore;
@@ -157,43 +182,40 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
 
   // Generate matches for each round
   for (let round = 1; round <= numRounds; round++) {
-    // Get available players - be less restrictive to ensure we don't skip rounds
-    let availablePlayers = players.filter(player => 
-      (playerLastPlayed.get(player.id) || -2) < round - 1
-    );
+    console.log(`\n=== Round ${round} ===`);
     
-    // If we don't have enough players, include players who played in the previous round
-    if (availablePlayers.length < numCourts * 4) {
-      availablePlayers = [...players];
-    }
+    // Get all players and sort by match count (ascending), then by last played round
+    let availablePlayers = [...players];
     
-    // Sort by match count (ascending) and add randomization to prevent patterns
+    // Sort primarily by match count, then by rounds since last played
     availablePlayers.sort((a, b) => {
-      const matchDiff = (playerMatchCount.get(a.id) || 0) - (playerMatchCount.get(b.id) || 0);
-      if (matchDiff !== 0) return matchDiff;
-      // Add seeded randomization to break ties and prevent rigid patterns
-      return rng.next() - 0.5;
+      const matchCountDiff = (playerMatchCount.get(a.id) || 0) - (playerMatchCount.get(b.id) || 0);
+      if (matchCountDiff !== 0) return matchCountDiff;
+      
+      const lastPlayedA = playerLastPlayed.get(a.id) || -2;
+      const lastPlayedB = playerLastPlayed.get(b.id) || -2;
+      const restDiff = (round - lastPlayedA) - (round - lastPlayedB);
+      if (restDiff !== 0) return -restDiff; // Negative because we want more rest to come first
+      
+      return rng.next() - 0.5; // Random tiebreaker
     });
     
-    // Additional shuffle to increase variability while maintaining fairness priority
-    if (round > 1) {
-      availablePlayers = rng.shuffle(availablePlayers);
-      // Re-sort to maintain fairness for match count, but with some randomness
-      availablePlayers.sort((a, b) => {
-        const matchDiff = (playerMatchCount.get(a.id) || 0) - (playerMatchCount.get(b.id) || 0);
-        if (matchDiff > 1) return matchDiff; // Only enforce strict ordering for significant differences
-        return rng.next() - 0.5;
-      });
-    }
+    // Log current match counts for debugging
+    const matchCounts = players.map(p => `${p.name}: ${playerMatchCount.get(p.id) || 0}`);
+    console.log('Match counts:', matchCounts.join(', '));
     
     const playersInRound = new Set<number>();
     
     // Assign players to courts (4 players per court for doubles)
     const playersPerMatch = 4;
     for (let court = 0; court < numCourts && availablePlayers.length >= playersPerMatch; court++) {
+      console.log(`\nCourt ${court + 1} - Available players: ${availablePlayers.map(p => `${p.name}(${playerMatchCount.get(p.id) || 0})`).join(', ')}`);
+      
       const matchPlayers = findBestTeamPairing(availablePlayers, court + 1, round);
       
       if (matchPlayers && matchPlayers.length === 4) {
+        console.log(`Selected: ${matchPlayers.map(p => `${p.name}(${playerMatchCount.get(p.id) || 0})`).join(', ')}`);
+        
         // Remove selected players from available list
         matchPlayers.forEach(player => {
           const index = availablePlayers.findIndex(p => p.id === player.id);
@@ -231,13 +253,26 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
             courtMateSeparation.set(key, round);
           }
         }
+      } else {
+        console.log('No suitable match found for this court');
       }
     }
     
     // Track who is sitting out this round
     const sittingOut = players.filter(player => !playersInRound.has(player.id));
     roundSittingOut[round] = sittingOut;
+    console.log(`Sitting out: ${sittingOut.map(p => `${p.name}(${playerMatchCount.get(p.id) || 0})`).join(', ')}`);
   }
+
+  // Log final match distribution
+  console.log('\n=== Final Match Distribution ===');
+  const finalMatchCounts = players.map(p => `${p.name}: ${playerMatchCount.get(p.id) || 0}`);
+  console.log(finalMatchCounts.join(', '));
+  
+  const matchCountValues = Array.from(playerMatchCount.values());
+  const minMatches = Math.min(...matchCountValues);
+  const maxMatches = Math.max(...matchCountValues);
+  console.log(`Match count range: ${minMatches} - ${maxMatches} (difference: ${maxMatches - minMatches})`);
 
   // Calculate player statistics
   const playerStats = players.map(player => ({
