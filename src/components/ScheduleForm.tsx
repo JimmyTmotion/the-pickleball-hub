@@ -17,7 +17,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
   const [config, setConfig] = React.useState<ScheduleConfig>({
     sessionStart: '09:00',
     sessionEnd: '12:00',
-    matchLength: 30,
+    matchLength: 10,
     numPlayers: 8,
     numCourts: 2
   });

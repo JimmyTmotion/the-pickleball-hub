@@ -105,24 +105,28 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   // Helper function to calculate match count balance score (heavily weighted)
   const calculateMatchCountBalance = (playerGroup: Player[]) => {
     const matchCounts = playerGroup.map(p => playerMatchCount.get(p.id) || 0);
-    const totalMatches = matchCounts.reduce((sum, count) => sum + count, 0);
-    const avgMatches = totalMatches / playerGroup.length;
+    const minGlobalMatchCount = Math.min(...Array.from(playerMatchCount.values()));
+    const maxGlobalMatchCount = Math.max(...Array.from(playerMatchCount.values()));
     
-    // Heavily penalize groups where players have significantly different match counts
+    // Heavily prioritize players with the lowest match counts globally
     let balanceScore = 0;
     matchCounts.forEach(count => {
-      const diff = Math.abs(count - avgMatches);
-      balanceScore -= diff * 500; // Heavy penalty for imbalance
+      if (count === minGlobalMatchCount) {
+        balanceScore += 1000; // Very high bonus for minimum match count players
+      } else if (count === minGlobalMatchCount + 1 && maxGlobalMatchCount - minGlobalMatchCount >= 1) {
+        balanceScore += 200; // Good bonus for one above minimum
+      } else if (count >= maxGlobalMatchCount) {
+        balanceScore -= 2000; // Heavy penalty for players with maximum matches
+      } else {
+        balanceScore -= (count - minGlobalMatchCount) * 500; // Penalty increases with match count difference
+      }
     });
     
-    // Extra bonus for selecting players with the lowest match counts
-    const minMatchCount = Math.min(...Array.from(playerMatchCount.values()));
+    // Additional penalty if this group would create imbalance
+    const avgCount = matchCounts.reduce((sum, count) => sum + count, 0) / matchCounts.length;
     matchCounts.forEach(count => {
-      if (count === minMatchCount) {
-        balanceScore += 200; // Bonus for selecting players with minimum matches
-      } else if (count === minMatchCount + 1) {
-        balanceScore += 100; // Smaller bonus for players with one more match
-      }
+      const diff = Math.abs(count - avgCount);
+      balanceScore -= diff * 300; // Penalty for within-group imbalance
     });
     
     return balanceScore;
@@ -184,12 +188,15 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   for (let round = 1; round <= numRounds; round++) {
     console.log(`\n=== Round ${round} ===`);
     
-    // Get all players and sort by match count (ascending), then by last played round
+    // Get all players and sort by match count (ascending), prioritizing those with fewer matches
     let availablePlayers = [...players];
     
-    // Sort primarily by match count, then by rounds since last played
+    // Sort primarily by match count (ascending), then by rounds since last played
     availablePlayers.sort((a, b) => {
-      const matchCountDiff = (playerMatchCount.get(a.id) || 0) - (playerMatchCount.get(b.id) || 0);
+      const matchCountA = playerMatchCount.get(a.id) || 0;
+      const matchCountB = playerMatchCount.get(b.id) || 0;
+      const matchCountDiff = matchCountA - matchCountB;
+      
       if (matchCountDiff !== 0) return matchCountDiff;
       
       const lastPlayedA = playerLastPlayed.get(a.id) || -2;
