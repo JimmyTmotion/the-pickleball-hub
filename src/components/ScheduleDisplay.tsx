@@ -6,6 +6,7 @@ import { Calendar, Users, TrendingUp, UserX } from 'lucide-react';
 import { Schedule } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import ScheduleDisplayOptions from './ScheduleDisplayOptions';
+import PlayerAnalytics from './PlayerAnalytics';
 
 interface ScheduleDisplayProps {
   schedule: Schedule;
@@ -228,6 +229,9 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Player Analytics */}
+      <PlayerAnalytics schedule={schedule} />
     </div>
   );
 };
