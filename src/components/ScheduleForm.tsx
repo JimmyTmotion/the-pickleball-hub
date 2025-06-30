@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Users, MapPin, Shuffle } from 'lucide-react';
+import { Clock, Users, MapPin, Shuffle, Hash } from 'lucide-react';
 import { ScheduleConfig } from '@/types/schedule';
 
 interface ScheduleFormProps {
@@ -15,9 +15,7 @@ interface ScheduleFormProps {
 
 const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoading }) => {
   const [config, setConfig] = React.useState<ScheduleConfig>({
-    sessionStart: '09:00',
-    sessionEnd: '12:00',
-    matchLength: 10,
+    numRounds: 10,
     numPlayers: 8,
     numCourts: 2
   });
@@ -57,46 +55,22 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="sessionStart" className="text-sm font-medium">
-                  Session Start
+            <div className="flex items-center gap-2">
+              <Hash className="h-4 w-4 text-purple-600" />
+              <div className="flex-1">
+                <Label htmlFor="numRounds" className="text-sm font-medium">
+                  Number of Rounds
                 </Label>
                 <Input
-                  id="sessionStart"
-                  type="time"
-                  value={config.sessionStart}
-                  onChange={(e) => updateConfig('sessionStart', e.target.value)}
+                  id="numRounds"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={config.numRounds}
+                  onChange={(e) => updateConfig('numRounds', parseInt(e.target.value))}
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label htmlFor="sessionEnd" className="text-sm font-medium">
-                  Session End
-                </Label>
-                <Input
-                  id="sessionEnd"
-                  type="time"
-                  value={config.sessionEnd}
-                  onChange={(e) => updateConfig('sessionEnd', e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="matchLength" className="text-sm font-medium">
-                Match Length (minutes)
-              </Label>
-              <Input
-                id="matchLength"
-                type="number"
-                min="5"
-                max="60"
-                value={config.matchLength}
-                onChange={(e) => updateConfig('matchLength', parseInt(e.target.value))}
-                className="mt-1"
-              />
             </div>
 
             <div className="flex items-center gap-2">

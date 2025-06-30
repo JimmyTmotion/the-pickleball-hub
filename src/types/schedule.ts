@@ -12,9 +12,7 @@ export interface Match {
 }
 
 export interface ScheduleConfig {
-  sessionStart: string;
-  sessionEnd: string;
-  matchLength: number; // minutes
+  numRounds: number;
   numPlayers: number;
   numCourts: number;
   playerNames?: string[]; // Optional custom player names

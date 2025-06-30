@@ -1,4 +1,3 @@
-
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
 // Simple seeded random number generator
@@ -25,7 +24,7 @@ class SeededRandom {
 }
 
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
-  const { sessionStart, sessionEnd, matchLength, numPlayers, numCourts, playerNames, randomSeed } = config;
+  const { numRounds, numPlayers, numCourts, playerNames, randomSeed } = config;
   
   // Initialize random number generator with seed or current time
   const rng = new SeededRandom(randomSeed || Date.now());
@@ -36,12 +35,6 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     name: playerNames && playerNames[i] ? playerNames[i] : `Player ${i + 1}`
   }));
 
-  // Calculate number of rounds
-  const startTime = new Date(`2024-01-01T${sessionStart}`);
-  const endTime = new Date(`2024-01-01T${sessionEnd}`);
-  const sessionDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // minutes
-  const numRounds = Math.floor(sessionDuration / matchLength);
-  
   const matches: Match[] = [];
   const roundSittingOut: Record<number, Player[]> = {}; // Track who sits out each round
   const playerMatchCount = new Map<number, number>();
