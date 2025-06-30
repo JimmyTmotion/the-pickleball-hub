@@ -1,3 +1,4 @@
+
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
 // Simple seeded random number generator
@@ -40,6 +41,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   const playerMatchCount = new Map<number, number>();
   const playerLastPlayed = new Map<number, number>();
   const partnershipCount = new Map<string, number>(); // Track how many times players have been partners
+  const opponentCount = new Map<string, number>(); // Track how many times players have been opponents
   const playerCourtHistory = new Map<number, Set<number>>(); // Track which courts each player has played on
   const recentOpponents = new Map<number, Set<number>>(); // Track recent opponents for each player
   const courtMateSeparation = new Map<string, number>(); // Track when players last played on same court
@@ -61,6 +63,12 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   const getPartnershipCount = (playerId1: number, playerId2: number) => {
     const key = getPartnershipKey(playerId1, playerId2);
     return partnershipCount.get(key) || 0;
+  };
+
+  // Helper function to get opponent count between two players
+  const getOpponentCount = (playerId1: number, playerId2: number) => {
+    const key = getPartnershipKey(playerId1, playerId2);
+    return opponentCount.get(key) || 0;
   };
 
   // Helper function to calculate court diversity score for a group of players
@@ -125,6 +133,41 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     return balanceScore;
   };
 
+  // Helper function to calculate partnership balance score
+  const calculatePartnershipBalance = (team1: Player[], team2: Player[]) => {
+    const team1PartnershipCount = getPartnershipCount(team1[0].id, team1[1].id);
+    const team2PartnershipCount = getPartnershipCount(team2[0].id, team2[1].id);
+    
+    // Heavily penalize partnerships that have played together many times
+    let partnershipPenalty = 0;
+    if (team1PartnershipCount >= 3) partnershipPenalty += team1PartnershipCount * 200;
+    else if (team1PartnershipCount >= 2) partnershipPenalty += team1PartnershipCount * 100;
+    else partnershipPenalty += team1PartnershipCount * 50;
+    
+    if (team2PartnershipCount >= 3) partnershipPenalty += team2PartnershipCount * 200;
+    else if (team2PartnershipCount >= 2) partnershipPenalty += team2PartnershipCount * 100;
+    else partnershipPenalty += team2PartnershipCount * 50;
+    
+    return -partnershipPenalty;
+  };
+
+  // Helper function to calculate opponent balance score
+  const calculateOpponentBalance = (team1: Player[], team2: Player[]) => {
+    let opponentPenalty = 0;
+    
+    // Check all opponent pairings between teams
+    team1.forEach(p1 => {
+      team2.forEach(p2 => {
+        const opponentCount = getOpponentCount(p1.id, p2.id);
+        if (opponentCount >= 3) opponentPenalty += opponentCount * 150;
+        else if (opponentCount >= 2) opponentPenalty += opponentCount * 75;
+        else opponentPenalty += opponentCount * 25;
+      });
+    });
+    
+    return -opponentPenalty;
+  };
+
   // Helper function to find best team pairing with enhanced balance prioritization
   const findBestTeamPairing = (availablePlayers: Player[], court: number, currentRound: number) => {
     const bestPairings: Player[][] = [];
@@ -142,19 +185,20 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
             // Calculate match count balance score (highest priority)
             const matchCountBalance = calculateMatchCountBalance(allPlayers);
             
-            // Calculate partnership score (lower partnership count is better)
-            const team1PartnershipCount = getPartnershipCount(team1[0].id, team1[1].id);
-            const team2PartnershipCount = getPartnershipCount(team2[0].id, team2[1].id);
-            const partnershipScore = -(team1PartnershipCount + team2PartnershipCount) * 50;
+            // Calculate partnership balance score (avoid repeated partnerships)
+            const partnershipBalance = calculatePartnershipBalance(team1, team2);
             
-            // Calculate court diversity score (higher is better)
+            // Calculate opponent balance score (promote varied opponents)
+            const opponentBalance = calculateOpponentBalance(team1, team2);
+            
+            // Calculate court diversity score (lower priority)
             const courtDiversityScore = calculateCourtDiversityScore(allPlayers, court);
             
             // Calculate separation penalty (heavy penalty for recent court mates)
             const separationPenalty = calculateSeparationPenalty(allPlayers, currentRound);
             
-            // Match count balance is the most important factor
-            const totalScore = matchCountBalance + partnershipScore + courtDiversityScore - separationPenalty;
+            // Match count balance is the most important, followed by partnership/opponent balance
+            const totalScore = matchCountBalance + partnershipBalance + opponentBalance + courtDiversityScore - separationPenalty;
             
             if (totalScore > bestScore) {
               bestScore = totalScore;
@@ -246,6 +290,16 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
         partnershipCount.set(team1Key, (partnershipCount.get(team1Key) || 0) + 1);
         partnershipCount.set(team2Key, (partnershipCount.get(team2Key) || 0) + 1);
 
+        // Update opponent counts (team1 vs team2)
+        const team1 = [matchPlayers[0], matchPlayers[1]];
+        const team2 = [matchPlayers[2], matchPlayers[3]];
+        team1.forEach(p1 => {
+          team2.forEach(p2 => {
+            const opponentKey = getPartnershipKey(p1.id, p2.id);
+            opponentCount.set(opponentKey, (opponentCount.get(opponentKey) || 0) + 1);
+          });
+        });
+
         // Update court mate separation tracking - track when any two players were on the same court
         for (let i = 0; i < matchPlayers.length; i++) {
           for (let j = i + 1; j < matchPlayers.length; j++) {
@@ -285,17 +339,32 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
 };
 
 export const exportScheduleToCSV = (schedule: Schedule): string => {
-  const headers = ['Match ID', 'Round', 'Court', 'Team 1 Player 1', 'Team 1 Player 2', 'Team 2 Player 1', 'Team 2 Player 2'];
+  const headers = ['Match ID', 'Round', 'Court', 'Team 1 Player 1', 'Team 1 Player 2', 'Team 2 Player 1', 'Team 2 Player 2', 'Players Sitting Out'];
   
-  const rows = schedule.matches.map(match => [
-    match.id.toString(),
-    match.round.toString(),
-    match.court.toString(),
-    match.players[0]?.name || '',
-    match.players[1]?.name || '',
-    match.players[2]?.name || '',
-    match.players[3]?.name || ''
-  ]);
+  // Group matches by round to get sitting out players
+  const matchesByRound = schedule.matches.reduce((acc, match) => {
+    if (!acc[match.round]) {
+      acc[match.round] = [];
+    }
+    acc[match.round].push(match);
+    return acc;
+  }, {} as Record<number, typeof schedule.matches>);
+  
+  const rows = schedule.matches.map(match => {
+    const sittingOut = schedule.roundSittingOut[match.round] || [];
+    const sittingOutNames = sittingOut.map(p => p.name).join('; ');
+    
+    return [
+      match.id.toString(),
+      match.round.toString(),
+      match.court.toString(),
+      match.players[0]?.name || '',
+      match.players[1]?.name || '',
+      match.players[2]?.name || '',
+      match.players[3]?.name || '',
+      sittingOutNames
+    ];
+  });
   
   const csvContent = [headers, ...rows]
     .map(row => row.map(cell => `"${cell}"`).join(','))
