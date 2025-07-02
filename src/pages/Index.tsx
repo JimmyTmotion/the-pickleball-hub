@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import ScheduleForm from '@/components/ScheduleForm';
 import ScheduleDisplay from '@/components/ScheduleDisplay';
 import { generateSchedule } from '@/utils/scheduleGenerator';
+import { saveSchedule } from '@/utils/scheduleStorage';
 import { Schedule, ScheduleConfig } from '@/types/schedule';
 import { toast } from '@/hooks/use-toast';
-import { Zap, Users, Clock, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Zap, Users, Clock, TrendingUp, History } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
+  const [currentConfig, setCurrentConfig] = useState<ScheduleConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGenerateSchedule = async (config: ScheduleConfig) => {
@@ -19,6 +23,10 @@ const Index = () => {
       
       const newSchedule = generateSchedule(config);
       setSchedule(newSchedule);
+      setCurrentConfig(config);
+      
+      // Auto-save to history
+      saveSchedule(config, newSchedule);
       
       toast({
         title: "Schedule Generated! 🎾",
@@ -47,6 +55,12 @@ const Index = () => {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
               Pickleball Scheduler
             </h1>
+            <Link to="/history">
+              <Button variant="outline" className="ml-4 flex items-center gap-2">
+                <History className="h-4 w-4" />
+                Schedule History
+              </Button>
+            </Link>
           </div>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Create fair and balanced pickleball schedules that ensure everyone gets equal playing time 

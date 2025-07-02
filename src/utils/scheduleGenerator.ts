@@ -25,7 +25,7 @@ class SeededRandom {
 }
 
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
-  const { numRounds, numPlayers, numCourts, playerNames, randomSeed } = config;
+  const { numRounds, numPlayers, numCourts, playerNames, randomSeed, prioritizeUniquePartnerships } = config;
   
   // Initialize random number generator with seed or current time
   const rng = new SeededRandom(randomSeed || Date.now());
@@ -139,14 +139,29 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     const team2PartnershipCount = getPartnershipCount(team2[0].id, team2[1].id);
     
     // Heavily penalize partnerships that have played together many times
-    let partnershipPenalty = 0;
-    if (team1PartnershipCount >= 3) partnershipPenalty += team1PartnershipCount * 200;
-    else if (team1PartnershipCount >= 2) partnershipPenalty += team1PartnershipCount * 100;
-    else partnershipPenalty += team1PartnershipCount * 50;
+    // Increase penalties when prioritizing unique partnerships
+    const uniqueMultiplier = prioritizeUniquePartnerships ? 3 : 1;
     
-    if (team2PartnershipCount >= 3) partnershipPenalty += team2PartnershipCount * 200;
-    else if (team2PartnershipCount >= 2) partnershipPenalty += team2PartnershipCount * 100;
-    else partnershipPenalty += team2PartnershipCount * 50;
+    let partnershipPenalty = 0;
+    if (team1PartnershipCount >= 1 && prioritizeUniquePartnerships) {
+      partnershipPenalty += team1PartnershipCount * 1000 * uniqueMultiplier; // Much higher penalty for any repeat
+    } else if (team1PartnershipCount >= 3) {
+      partnershipPenalty += team1PartnershipCount * 200 * uniqueMultiplier;
+    } else if (team1PartnershipCount >= 2) {
+      partnershipPenalty += team1PartnershipCount * 100 * uniqueMultiplier;
+    } else {
+      partnershipPenalty += team1PartnershipCount * 50 * uniqueMultiplier;
+    }
+    
+    if (team2PartnershipCount >= 1 && prioritizeUniquePartnerships) {
+      partnershipPenalty += team2PartnershipCount * 1000 * uniqueMultiplier; // Much higher penalty for any repeat
+    } else if (team2PartnershipCount >= 3) {
+      partnershipPenalty += team2PartnershipCount * 200 * uniqueMultiplier;
+    } else if (team2PartnershipCount >= 2) {
+      partnershipPenalty += team2PartnershipCount * 100 * uniqueMultiplier;
+    } else {
+      partnershipPenalty += team2PartnershipCount * 50 * uniqueMultiplier;
+    }
     
     return -partnershipPenalty;
   };

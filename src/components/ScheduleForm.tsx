@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Users, MapPin, Shuffle, Hash } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Clock, Users, MapPin, Shuffle, Hash, Heart } from 'lucide-react';
 import { ScheduleConfig } from '@/types/schedule';
 
 interface ScheduleFormProps {
@@ -40,7 +41,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
     onGenerateSchedule(configWithNames);
   };
 
-  const updateConfig = (field: keyof ScheduleConfig, value: string | number) => {
+  const updateConfig = (field: keyof ScheduleConfig, value: string | number | boolean) => {
     setConfig(prev => ({ ...prev, [field]: value }));
   };
 
@@ -123,6 +124,23 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
               <p className="text-xs text-gray-500 mt-1">
                 Leave empty to use default names (Player 1, Player 2, etc.)
               </p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="prioritizeUniquePartnerships"
+                checked={config.prioritizeUniquePartnerships || false}
+                onCheckedChange={(checked) => updateConfig('prioritizeUniquePartnerships', checked)}
+              />
+              <div className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-red-500" />
+                <Label 
+                  htmlFor="prioritizeUniquePartnerships" 
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Prioritize Unique Partnerships
+                </Label>
+              </div>
             </div>
           </div>
 
