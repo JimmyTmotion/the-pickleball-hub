@@ -31,7 +31,7 @@ interface PlayerState {
   lastPlayedRound: number;
   roundsSincePlayed: number;
   partnerships: Set<number>;
-  opponents: Set<number>;
+  opponents: Map<number, number>; // Track opponent frequency
   courtsPlayed: Set<number>;
 }
 
@@ -63,7 +63,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
       lastPlayedRound: -2, // Allow playing in first round
       roundsSincePlayed: 999,
       partnerships: new Set(),
-      opponents: new Set(),
+      opponents: new Map(), // Track frequency of each opponent
       courtsPlayed: new Set()
     });
     
@@ -97,15 +97,22 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     return hasPartnered ? -100 : 100; // Prefer new partnerships
   };
 
-  // Priority 3: Unique opposition
+  // Priority 3: Unique opposition (heavily weighted against repeated matchups)
   const getOppositionScore = (team1: [number, number], team2: [number, number]): number => {
     let score = 0;
     
     for (const p1 of team1) {
       for (const p2 of team2) {
         const state1 = playerStates.get(p1)!;
-        const hasOpposed = state1.opponents.has(p2);
-        score += hasOpposed ? -50 : 50; // Prefer new opponents
+        const opponentCount = state1.opponents.get(p2) || 0;
+        
+        if (opponentCount === 0) {
+          score += 200; // High bonus for new opponents
+        } else if (opponentCount === 1) {
+          score -= 300; // Heavy penalty for second time
+        } else {
+          score -= 1000 * opponentCount; // Massive penalty for multiple repeats
+        }
       }
     }
     
@@ -268,11 +275,13 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
       playerStates.get(p3)!.partnerships.add(p4);
       playerStates.get(p4)!.partnerships.add(p3);
       
-      // Update opponents
+      // Update opponents (track frequency)
       for (const p1 of bestMatch.team1) {
         for (const p2 of bestMatch.team2) {
-          playerStates.get(p1)!.opponents.add(p2);
-          playerStates.get(p2)!.opponents.add(p1);
+          const state1 = playerStates.get(p1)!;
+          const state2 = playerStates.get(p2)!;
+          state1.opponents.set(p2, (state1.opponents.get(p2) || 0) + 1);
+          state2.opponents.set(p1, (state2.opponents.get(p1) || 0) + 1);
         }
       }
     }
