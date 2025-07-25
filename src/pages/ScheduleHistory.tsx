@@ -2,12 +2,16 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft } from 'lucide-react';
-import { getSavedSchedules, deleteSchedule } from '@/utils/scheduleStorage';
-import { SavedSchedule } from '@/types/schedule';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3 } from 'lucide-react';
+import { getSavedSchedules, deleteSchedule, updateMatchResult } from '@/utils/scheduleStorage';
+import { SavedSchedule, MatchResult } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import { Link } from 'react-router-dom';
 import ScheduleDisplay from '@/components/ScheduleDisplay';
+import MatchResultInput from '@/components/MatchResultInput';
+import LeagueTable from '@/components/LeagueTable';
+import OverallLeaderboard from '@/components/OverallLeaderboard';
 
 const ScheduleHistory: React.FC = () => {
   const [savedSchedules, setSavedSchedules] = React.useState<SavedSchedule[]>([]);
@@ -22,6 +26,19 @@ const ScheduleHistory: React.FC = () => {
     setSavedSchedules(getSavedSchedules());
     if (selectedSchedule?.id === id) {
       setSelectedSchedule(null);
+    }
+  };
+
+  const handleResultUpdate = (matchId: number, result: MatchResult) => {
+    if (selectedSchedule) {
+      updateMatchResult(selectedSchedule.id, matchId, result);
+      // Refresh the schedule data
+      const updatedSchedules = getSavedSchedules();
+      setSavedSchedules(updatedSchedules);
+      const updatedSelected = updatedSchedules.find(s => s.id === selectedSchedule.id);
+      if (updatedSelected) {
+        setSelectedSchedule(updatedSelected);
+      }
     }
   };
 
@@ -54,9 +71,45 @@ const ScheduleHistory: React.FC = () => {
             </Button>
             <h1 className="text-3xl font-bold text-gray-800">{selectedSchedule.name}</h1>
           </div>
-          <ScheduleDisplay 
-            schedule={selectedSchedule.schedule}
-          />
+          
+          <Tabs defaultValue="schedule" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="schedule">Schedule</TabsTrigger>
+              <TabsTrigger value="results">Enter Results</TabsTrigger>
+              <TabsTrigger value="league" className="flex items-center gap-2">
+                <Trophy className="h-4 w-4" />
+                League Table
+              </TabsTrigger>
+              <TabsTrigger value="overall" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Overall Stats
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="schedule">
+              <ScheduleDisplay schedule={selectedSchedule.schedule} />
+            </TabsContent>
+            
+            <TabsContent value="results" className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {selectedSchedule.schedule.matches.map((match) => (
+                  <MatchResultInput
+                    key={match.id}
+                    match={match}
+                    onResultUpdate={handleResultUpdate}
+                  />
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="league">
+              <LeagueTable schedule={selectedSchedule.schedule} title={`${selectedSchedule.name} - League Table`} />
+            </TabsContent>
+            
+            <TabsContent value="overall">
+              <OverallLeaderboard savedSchedules={[selectedSchedule]} />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     );
@@ -64,7 +117,7 @@ const ScheduleHistory: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link to="/">
@@ -73,7 +126,7 @@ const ScheduleHistory: React.FC = () => {
                 Back to Generator
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold text-gray-800">Schedule History</h1>
+            <h1 className="text-3xl font-bold text-gray-800">Schedule History & Results</h1>
           </div>
         </div>
 
@@ -89,73 +142,92 @@ const ScheduleHistory: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
-            {savedSchedules.map((schedule) => (
-              <Card key={schedule.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{schedule.name}</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {schedule.createdAt.toLocaleDateString()}
-                      </Badge>
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Hash className="h-3 w-3" />
-                        {schedule.config.numRounds} rounds
-                      </Badge>
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {schedule.config.numPlayers} players
-                      </Badge>
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {schedule.config.numCourts} courts
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      <p>Total matches: {schedule.schedule.matches.length}</p>
-                      <p>Created: {schedule.createdAt.toLocaleString()}</p>
-                      {schedule.config.prioritizeUniquePartnerships && (
-                        <Badge variant="secondary" className="mt-1">Unique Partnerships Prioritized</Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSelectedSchedule(schedule)}
-                      >
-                        View Schedule
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDownload(schedule)}
-                        className="flex items-center gap-1"
-                      >
-                        <Download className="h-3 w-3" />
-                        CSV
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(schedule.id)}
-                        className="flex items-center gap-1"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <>
+            {/* Overall Leaderboard */}
+            <OverallLeaderboard savedSchedules={savedSchedules} />
+            
+            {/* Schedule List */}
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-gray-800">Individual Schedules</h2>
+              <div className="grid gap-4">
+                {savedSchedules.map((schedule) => {
+                  const completedMatches = schedule.schedule.matches.filter(m => m.result?.completed).length;
+                  return (
+                    <Card key={schedule.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">{schedule.name}</CardTitle>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {schedule.createdAt.toLocaleDateString()}
+                            </Badge>
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <Hash className="h-3 w-3" />
+                              {schedule.config.numRounds} rounds
+                            </Badge>
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {schedule.config.numPlayers} players
+                            </Badge>
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {schedule.config.numCourts} courts
+                            </Badge>
+                            {completedMatches > 0 && (
+                              <Badge className="flex items-center gap-1">
+                                <Trophy className="h-3 w-3" />
+                                {completedMatches}/{schedule.schedule.matches.length} complete
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-gray-600">
+                            <p>Total matches: {schedule.schedule.matches.length}</p>
+                            <p>Completed matches: {completedMatches}</p>
+                            <p>Created: {schedule.createdAt.toLocaleString()}</p>
+                            {schedule.config.prioritizeUniquePartnerships && (
+                              <Badge variant="secondary" className="mt-1">Unique Partnerships Prioritized</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedSchedule(schedule)}
+                            >
+                              Manage & View Results
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownload(schedule)}
+                              className="flex items-center gap-1"
+                            >
+                              <Download className="h-3 w-3" />
+                              CSV
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(schedule.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

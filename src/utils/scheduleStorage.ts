@@ -1,4 +1,4 @@
-import { SavedSchedule, ScheduleConfig, Schedule } from '@/types/schedule';
+import { SavedSchedule, ScheduleConfig, Schedule, MatchResult } from '@/types/schedule';
 
 const STORAGE_KEY = 'paddle_schedules';
 
@@ -37,6 +37,34 @@ export const getSavedSchedules = (): SavedSchedule[] => {
 export const deleteSchedule = (id: string): void => {
   const existingSchedules = getSavedSchedules();
   const updatedSchedules = existingSchedules.filter(schedule => schedule.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSchedules));
+};
+
+export const updateScheduleName = (id: string, name: string): void => {
+  const existingSchedules = getSavedSchedules();
+  const updatedSchedules = existingSchedules.map(schedule => 
+    schedule.id === id ? { ...schedule, name } : schedule
+  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSchedules));
+};
+
+export const updateMatchResult = (scheduleId: string, matchId: number, result: MatchResult): void => {
+  const existingSchedules = getSavedSchedules();
+  const updatedSchedules = existingSchedules.map(savedSchedule => {
+    if (savedSchedule.id === scheduleId) {
+      const updatedMatches = savedSchedule.schedule.matches.map(match => 
+        match.id === matchId ? { ...match, result } : match
+      );
+      return {
+        ...savedSchedule,
+        schedule: {
+          ...savedSchedule.schedule,
+          matches: updatedMatches
+        }
+      };
+    }
+    return savedSchedule;
+  });
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSchedules));
 };
 

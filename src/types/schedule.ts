@@ -4,11 +4,18 @@ export interface Player {
   name: string;
 }
 
+export interface MatchResult {
+  team1Score: number;
+  team2Score: number;
+  completed: boolean;
+}
+
 export interface Match {
   id: number;
   court: number;
   players: Player[];
   round: number;
+  result?: MatchResult;
 }
 
 export interface ScheduleConfig {
@@ -36,4 +43,16 @@ export interface Schedule {
     matchCount: number;
   }[];
   roundSittingOut: Record<number, Player[]>; // Track who sits out each round
+}
+
+export interface PlayerLeagueStats {
+  playerId: number;
+  playerName: string;
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  pointsDifference: number;
+  winPercentage: number;
 }
