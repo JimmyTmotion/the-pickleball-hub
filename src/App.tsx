@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import ScheduleHistory from "./pages/ScheduleHistory";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import MatchTimer from "./pages/MatchTimer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/history" element={<ScheduleHistory />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/timer" element={<MatchTimer />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
