@@ -50,9 +50,14 @@ const MyAccount: React.FC = () => {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      loadSchedules();
     }
-    setSavedSchedules(getSavedSchedules());
   }, [user]);
+
+  const loadSchedules = async () => {
+    const schedules = await getSavedSchedules();
+    setSavedSchedules(schedules);
+  };
 
   const fetchProfile = async () => {
     try {
@@ -129,18 +134,19 @@ const MyAccount: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
-    deleteSchedule(id);
-    setSavedSchedules(getSavedSchedules());
+  const handleDelete = async (id: string) => {
+    await deleteSchedule(id);
+    const schedules = await getSavedSchedules();
+    setSavedSchedules(schedules);
     if (selectedSchedule?.id === id) {
       setSelectedSchedule(null);
     }
   };
 
-  const handleResultUpdate = (matchId: number, result: MatchResult) => {
+  const handleResultUpdate = async (matchId: number, result: MatchResult) => {
     if (selectedSchedule) {
-      updateMatchResult(selectedSchedule.id, matchId, result);
-      const updatedSchedules = getSavedSchedules();
+      await updateMatchResult(selectedSchedule.id, matchId, result);
+      const updatedSchedules = await getSavedSchedules();
       setSavedSchedules(updatedSchedules);
       const updatedSelected = updatedSchedules.find(s => s.id === selectedSchedule.id);
       if (updatedSelected) {

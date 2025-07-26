@@ -18,22 +18,27 @@ const ScheduleHistory: React.FC = () => {
   const [selectedSchedule, setSelectedSchedule] = React.useState<SavedSchedule | null>(null);
 
   React.useEffect(() => {
-    setSavedSchedules(getSavedSchedules());
+    const loadSchedules = async () => {
+      const schedules = await getSavedSchedules();
+      setSavedSchedules(schedules);
+    };
+    loadSchedules();
   }, []);
 
-  const handleDelete = (id: string) => {
-    deleteSchedule(id);
-    setSavedSchedules(getSavedSchedules());
+  const handleDelete = async (id: string) => {
+    await deleteSchedule(id);
+    const schedules = await getSavedSchedules();
+    setSavedSchedules(schedules);
     if (selectedSchedule?.id === id) {
       setSelectedSchedule(null);
     }
   };
 
-  const handleResultUpdate = (matchId: number, result: MatchResult) => {
+  const handleResultUpdate = async (matchId: number, result: MatchResult) => {
     if (selectedSchedule) {
-      updateMatchResult(selectedSchedule.id, matchId, result);
+      await updateMatchResult(selectedSchedule.id, matchId, result);
       // Refresh the schedule data
-      const updatedSchedules = getSavedSchedules();
+      const updatedSchedules = await getSavedSchedules();
       setSavedSchedules(updatedSchedules);
       const updatedSelected = updatedSchedules.find(s => s.id === selectedSchedule.id);
       if (updatedSelected) {
@@ -156,7 +161,12 @@ const ScheduleHistory: React.FC = () => {
                     <Card key={schedule.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader>
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">{schedule.name}</CardTitle>
+                          <div>
+                            <CardTitle className="text-lg">{schedule.name}</CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Created by {schedule.createdBy?.name || 'Unknown User'}
+                            </p>
+                          </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary" className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />

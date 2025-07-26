@@ -33,6 +33,11 @@ export interface SavedSchedule {
   config: ScheduleConfig;
   schedule: Schedule;
   createdAt: Date;
+  createdBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 export interface Schedule {

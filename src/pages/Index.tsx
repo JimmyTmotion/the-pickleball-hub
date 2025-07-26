@@ -26,7 +26,7 @@ const Index = () => {
       setCurrentConfig(config);
       
       // Auto-save to history
-      saveSchedule(config, newSchedule, name);
+      await saveSchedule(config, newSchedule, name);
       
       toast({
         title: "Schedule Generated! 🎾",
