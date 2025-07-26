@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Zap, Users, Clock, TrendingUp, History, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Navigation from '@/components/ui/navigation';
 
 const Index = () => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -56,6 +57,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white">
+      <Navigation />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -106,7 +108,7 @@ const Index = () => {
                 </div>
 
                 {/* Schedule Display */}
-                <ScheduleDisplay schedule={schedule} />
+                <ScheduleDisplay schedule={schedule} scheduleName={currentConfig?.playerNames?.join(', ') || 'Generated Schedule'} />
               </>
             ) : (
               <div className="flex items-center justify-center h-64 bg-white rounded-lg border-2 border-dashed border-gray-200">

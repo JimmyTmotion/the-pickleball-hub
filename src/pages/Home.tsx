@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import EventList from '@/components/EventList';
+import Navigation from '@/components/ui/navigation';
 
 const Home = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -26,39 +27,8 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white">
+      <Navigation />
       <div className="container mx-auto px-4 py-8">
-        {/* Header with Auth */}
-        <div className="flex justify-between items-center mb-8">
-          <div></div>
-          <div className="flex gap-2">
-            {user ? (
-              <>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/account">
-                    <User className="h-4 w-4 mr-2" />
-                    My Account
-                  </Link>
-                </Button>
-                {isAdmin && (
-                  <Button asChild variant="outline" size="sm">
-                    <Link to="/admin">
-                      <Shield className="h-4 w-4 mr-2" />
-                      Admin
-                    </Link>
-                  </Button>
-                )}
-                <Button onClick={handleSignOut} variant="outline" size="sm">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <Button asChild size="sm">
-                <Link to="/auth">Sign In</Link>
-              </Button>
-            )}
-          </div>
-        </div>
 
         {/* Hero Section */}
         <div className="text-center mb-12">

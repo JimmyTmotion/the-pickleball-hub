@@ -3,18 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Calendar, Users, TrendingUp, UserX, ChevronDown } from 'lucide-react';
+import { Calendar, Users, TrendingUp, UserX, ChevronDown, Play } from 'lucide-react';
 import { Schedule } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import ScheduleDisplayOptions from './ScheduleDisplayOptions';
 import PlayerAnalytics from './PlayerAnalytics';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface ScheduleDisplayProps {
   schedule: Schedule;
+  scheduleName?: string;
 }
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName }) => {
   const [viewMode, setViewMode] = useState<'standard' | 'printable'>('standard');
+  const navigate = useNavigate();
   const { matches, playerStats, roundSittingOut } = schedule;
 
   // Group matches by round
@@ -38,6 +42,15 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleBeginTournament = () => {
+    navigate('/tournament', {
+      state: {
+        schedule,
+        name: scheduleName || 'Tournament'
+      }
+    });
   };
 
   if (viewMode === 'printable') {
@@ -123,11 +136,17 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule }) => {
 
   return (
     <div className="space-y-6">
-      <ScheduleDisplayOptions
-        onViewChange={setViewMode}
-        onDownloadCSV={handleDownloadCSV}
-        currentView={viewMode}
-      />
+      <div className="flex justify-between items-center">
+        <ScheduleDisplayOptions
+          onViewChange={setViewMode}
+          onDownloadCSV={handleDownloadCSV}
+          currentView={viewMode}
+        />
+        <Button onClick={handleBeginTournament} className="flex items-center gap-2">
+          <Play className="h-4 w-4" />
+          Begin Tournament
+        </Button>
+      </div>
 
       {/* Schedule Overview */}
       <Collapsible defaultOpen>
