@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ScheduleForm from '@/components/ScheduleForm';
 import ScheduleDisplay from '@/components/ScheduleDisplay';
 import { generateSchedule } from '@/utils/scheduleGenerator';
-import { saveSchedule } from '@/utils/scheduleStorage';
+import { saveSchedule, clearAllSchedules } from '@/utils/scheduleStorage';
 import { Schedule, ScheduleConfig } from '@/types/schedule';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,11 @@ const Index = () => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [currentConfig, setCurrentConfig] = useState<ScheduleConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Clear all schedules on component mount
+  React.useEffect(() => {
+    clearAllSchedules();
+  }, []);
 
   const handleGenerateSchedule = async (config: ScheduleConfig, name?: string) => {
     setIsLoading(true);
