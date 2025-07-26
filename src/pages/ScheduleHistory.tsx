@@ -2,8 +2,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3, ChevronDown } from 'lucide-react';
 import { getSavedSchedules, deleteSchedule, updateMatchResult } from '@/utils/scheduleStorage';
 import { SavedSchedule, MatchResult } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
@@ -81,44 +81,103 @@ const ScheduleHistory: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-800">{selectedSchedule.name}</h1>
           </div>
           
-          <Tabs value={defaultTab} defaultValue={defaultTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="schedule">Schedule</TabsTrigger>
-              <TabsTrigger value="results">Enter Results</TabsTrigger>
-              <TabsTrigger value="league" className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" />
-                League Table
-              </TabsTrigger>
-              <TabsTrigger value="overall" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Overall Stats
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="schedule">
-              <ScheduleDisplay schedule={selectedSchedule.schedule} />
-            </TabsContent>
-            
-            <TabsContent value="results" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {selectedSchedule.schedule.matches.map((match) => (
-                  <MatchResultInput
-                    key={match.id}
-                    match={match}
-                    onResultUpdate={handleResultUpdate}
-                  />
-                ))}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="league">
-              <LeagueTable schedule={selectedSchedule.schedule} title={`${selectedSchedule.name} - League Table`} />
-            </TabsContent>
-            
-            <TabsContent value="overall">
-              <OverallLeaderboard savedSchedules={[selectedSchedule]} />
-            </TabsContent>
-          </Tabs>
+          <div className="space-y-6">
+            {/* Schedule Section */}
+            <Collapsible>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader className="hover:bg-muted/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between text-xl font-bold text-blue-700">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5" />
+                        Schedule
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <ScheduleDisplay schedule={selectedSchedule.schedule} />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+
+            {/* Enter Results Section */}
+            <Collapsible defaultOpen={!hasCompletedMatches}>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader className="hover:bg-muted/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between text-xl font-bold text-green-700">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Enter Results
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {selectedSchedule.schedule.matches.map((match) => (
+                        <MatchResultInput
+                          key={match.id}
+                          match={match}
+                          onResultUpdate={handleResultUpdate}
+                        />
+                      ))}
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+
+            {/* League Table Section */}
+            <Collapsible defaultOpen={hasCompletedMatches}>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader className="hover:bg-muted/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between text-xl font-bold text-yellow-700">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="h-5 w-5" />
+                        League Table
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <LeagueTable schedule={selectedSchedule.schedule} title={`${selectedSchedule.name} - League Table`} />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+
+            {/* Overall Stats Section */}
+            <Collapsible>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader className="hover:bg-muted/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between text-xl font-bold text-purple-700">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Overall Stats
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <OverallLeaderboard savedSchedules={[selectedSchedule]} />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          </div>
         </div>
       </div>
     );
