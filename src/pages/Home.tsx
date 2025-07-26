@@ -86,7 +86,7 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto mb-8">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto mb-8">
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 text-2xl">
@@ -154,15 +154,40 @@ const Home = () => {
                 </Link>
               </CardContent>
             </Card>
-          </div>
 
-          <div className="text-center">
-            <Link to="/history">
-              <Button variant="outline" className="flex items-center gap-2 mx-auto">
-                <BarChart3 className="h-4 w-4" />
-                View Match Results & Analytics
-              </Button>
-            </Link>
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <BarChart3 className="h-8 w-8 text-blue-600" />
+                  Match Results & Analytics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-6">
+                  View detailed analytics from your previous matches including player statistics, 
+                  partnership data, and performance trends over time.
+                </p>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <TrendingUp className="h-4 w-4" />
+                    Performance analytics
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Users className="h-4 w-4" />
+                    Partnership insights
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Trophy className="h-4 w-4" />
+                    Match history tracking
+                  </div>
+                </div>
+                <Link to="/history">
+                  <Button variant="outline" className="w-full">
+                    View Analytics
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
