@@ -66,12 +66,6 @@ const ScheduleHistory: React.FC = () => {
     const hasCompletedMatches = selectedSchedule.schedule.matches.some(m => m.result?.completed);
     const defaultTab = hasCompletedMatches ? "league" : "results";
     
-    console.log('Selected schedule:', selectedSchedule.name);
-    console.log('Has completed matches:', hasCompletedMatches);
-    console.log('Default tab will be:', defaultTab);
-    console.log('Total matches:', selectedSchedule.schedule.matches.length);
-    console.log('Completed matches:', selectedSchedule.schedule.matches.filter(m => m.result?.completed).length);
-    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
         <div className="max-w-7xl mx-auto">
@@ -87,7 +81,7 @@ const ScheduleHistory: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-800">{selectedSchedule.name}</h1>
           </div>
           
-          <Tabs defaultValue={defaultTab} className="space-y-6">
+          <Tabs value={defaultTab} defaultValue={defaultTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
               <TabsTrigger value="results">Enter Results</TabsTrigger>
