@@ -1,23 +1,18 @@
 import React, { useState } from 'react';
 import ScheduleForm from '@/components/ScheduleForm';
 import ScheduleDisplay from '@/components/ScheduleDisplay';
-import PlayerAnalytics from '@/components/PlayerAnalytics';
 import { generateSchedule } from '@/utils/scheduleGenerator';
 import { saveSchedule } from '@/utils/scheduleStorage';
 import { Schedule, ScheduleConfig } from '@/types/schedule';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, Users, Clock, TrendingUp, History, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { Zap, Users, Clock, TrendingUp, History, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
-  const [scheduleVariations, setScheduleVariations] = useState<Schedule[]>([]);
-  const [currentVariationIndex, setCurrentVariationIndex] = useState(0);
+  const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [currentConfig, setCurrentConfig] = useState<ScheduleConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const currentSchedule = scheduleVariations[currentVariationIndex] || null;
 
   const handleGenerateSchedule = async (config: ScheduleConfig) => {
     setIsLoading(true);
@@ -26,24 +21,16 @@ const Index = () => {
       // Add a small delay to show loading state
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Generate multiple variations (5 different schedules)
-      const variations: Schedule[] = [];
-      for (let i = 0; i < 5; i++) {
-        const configWithSeed = { ...config, randomSeed: (config.randomSeed || Date.now()) + i * 1000 };
-        const newSchedule = generateSchedule(configWithSeed);
-        variations.push(newSchedule);
-      }
-      
-      setScheduleVariations(variations);
-      setCurrentVariationIndex(0);
+      const newSchedule = generateSchedule(config);
+      setSchedule(newSchedule);
       setCurrentConfig(config);
       
-      // Auto-save the first variation to history
-      saveSchedule(config, variations[0]);
+      // Auto-save to history
+      saveSchedule(config, newSchedule);
       
       toast({
-        title: "5 Schedule Variations Generated! 🎾",
-        description: `Created ${variations[0].matches.length} matches for ${config.numPlayers} players across ${config.numCourts} courts.`,
+        title: "Schedule Generated! 🎾",
+        description: `Created ${newSchedule.matches.length} matches for ${config.numPlayers} players across ${config.numCourts} courts.`,
       });
     } catch (error) {
       toast({
@@ -56,19 +43,7 @@ const Index = () => {
     }
   };
 
-  const handlePreviousVariation = () => {
-    if (currentVariationIndex > 0) {
-      setCurrentVariationIndex(currentVariationIndex - 1);
-    }
-  };
-
-  const handleNextVariation = () => {
-    if (currentVariationIndex < scheduleVariations.length - 1) {
-      setCurrentVariationIndex(currentVariationIndex + 1);
-    }
-  };
-
-  const handleRegenerateVariations = async () => {
+  const handleRegenerateSchedule = async () => {
     if (currentConfig) {
       handleGenerateSchedule(currentConfig);
     }
@@ -111,72 +86,22 @@ const Index = () => {
 
           {/* Schedule Display */}
           <div className="xl:col-span-2 space-y-6">
-            {currentSchedule ? (
+            {schedule ? (
               <>
-                {/* Navigation Controls */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>Schedule Variation {currentVariationIndex + 1} of {scheduleVariations.length}</span>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleRegenerateVariations}
-                        className="flex items-center gap-2"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                        Generate New
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePreviousVariation}
-                        disabled={currentVariationIndex === 0}
-                        className="flex items-center gap-2"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
-                      </Button>
-                      
-                      <div className="flex gap-2">
-                        {scheduleVariations.map((_, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setCurrentVariationIndex(index)}
-                            className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
-                              index === currentVariationIndex
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted hover:bg-muted/80'
-                            }`}
-                          >
-                            {index + 1}
-                          </button>
-                        ))}
-                      </div>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleNextVariation}
-                        disabled={currentVariationIndex === scheduleVariations.length - 1}
-                        className="flex items-center gap-2"
-                      >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Regenerate Button */}
+                <div className="flex justify-end">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleRegenerateSchedule}
+                    className="flex items-center gap-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Regenerate Schedule
+                  </Button>
+                </div>
 
                 {/* Schedule Display */}
-                <ScheduleDisplay schedule={currentSchedule} />
-
-                {/* Matchup Analysis */}
-                <PlayerAnalytics schedule={currentSchedule} />
+                <ScheduleDisplay schedule={schedule} />
               </>
             ) : (
               <div className="flex items-center justify-center h-64 bg-white rounded-lg border-2 border-dashed border-gray-200">
@@ -188,7 +113,7 @@ const Index = () => {
                     Ready to Generate Your Schedule
                   </h3>
                   <p className="text-gray-500">
-                    Fill out the form and click "Generate 5 Variations" to create your pickleball matches.
+                    Fill out the form and click "Generate Schedule" to create your pickleball matches.
                   </p>
                 </div>
               </div>
