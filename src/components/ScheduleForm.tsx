@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Clock, Users, MapPin, Shuffle, Hash, Heart } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Clock, Users, MapPin, Shuffle, Hash, Heart, Target } from 'lucide-react';
 import { ScheduleConfig } from '@/types/schedule';
 
 interface ScheduleFormProps {
@@ -126,21 +126,25 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
               </p>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="prioritizeUniquePartnerships"
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {config.prioritizeUniquePartnerships ? (
+                  <Heart className="h-4 w-4 text-red-500" />
+                ) : (
+                  <Target className="h-4 w-4 text-blue-500" />
+                )}
+                <Label 
+                  htmlFor="priorityToggle" 
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  {config.prioritizeUniquePartnerships ? 'Prioritise Unique Partnerships' : 'Prioritise Varied Opposition'}
+                </Label>
+              </div>
+              <Switch
+                id="priorityToggle"
                 checked={config.prioritizeUniquePartnerships || false}
                 onCheckedChange={(checked) => updateConfig('prioritizeUniquePartnerships', checked)}
               />
-              <div className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-red-500" />
-                <Label 
-                  htmlFor="prioritizeUniquePartnerships" 
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  Prioritize Unique Partnerships
-                </Label>
-              </div>
             </div>
           </div>
 

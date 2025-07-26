@@ -24,7 +24,7 @@ export interface ScheduleConfig {
   numCourts: number;
   playerNames?: string[]; // Optional custom player names
   randomSeed?: number; // Optional random seed for variability
-  prioritizeUniquePartnerships?: boolean; // Prioritize unique partnerships
+  prioritizeUniquePartnerships?: boolean; // Prioritise unique partnerships when true, varied opposition when false
 }
 
 export interface SavedSchedule {
