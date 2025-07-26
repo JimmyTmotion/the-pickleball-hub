@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { CalendarDays, MapPin } from 'lucide-react';
 import { Event, EventType, EventFilters, MatchType } from '@/types/event';
 import { supabase } from '@/integrations/supabase/client';
+import EventModal from './EventModal';
 
 interface EventListProps {
   refreshTrigger?: number;
@@ -17,6 +18,8 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [filters, setFilters] = useState<EventFilters>({});
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const eventTypes: (EventType | 'All')[] = [
     'All',
@@ -96,6 +99,27 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
 
   const clearFilters = () => {
     setFilters({});
+  };
+
+  const handleEventClick = (event: Event) => {
+    setSelectedEvent(event);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const handleNavigate = (direction: 'prev' | 'next') => {
+    if (!selectedEvent) return;
+    
+    const currentIndex = filteredEvents.findIndex(e => e.id === selectedEvent.id);
+    let newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+    
+    if (newIndex >= 0 && newIndex < filteredEvents.length) {
+      setSelectedEvent(filteredEvents[newIndex]);
+    }
   };
 
   const formatDate = (dateString: string, timeString?: string) => {
@@ -193,7 +217,11 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
           </div>
         ) : (
           filteredEvents.map((event) => (
-            <Card key={event.id} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={event.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleEventClick(event)}
+            >
               <div className="aspect-video relative overflow-hidden rounded-t-lg">
                 <img
                   src={event.thumbnail || '/lovable-uploads/f2272b16-c6f9-43a4-9c5e-9f2f98722a16.png'}
@@ -248,6 +276,15 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
           ))
         )}
       </div>
+
+      {/* Event Modal */}
+      <EventModal
+        event={selectedEvent}
+        events={filteredEvents}
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onNavigate={handleNavigate}
+      />
     </div>
   );
 };
