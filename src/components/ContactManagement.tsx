@@ -81,8 +81,9 @@ const ContactManagement: React.FC = () => {
         .from('admin_email_settings')
         .upsert({
           setting_key: 'contact_notification_emails',
-          setting_value: emailSettings,
-          updated_at: new Date().toISOString()
+          setting_value: emailSettings
+        }, {
+          onConflict: 'setting_key'
         });
 
       if (error) throw error;
