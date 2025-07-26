@@ -1,13 +1,58 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Users, BarChart3, Trophy, Clock, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Calendar, Users, BarChart3, Trophy, Clock, TrendingUp, Shield, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const Home = () => {
+  const { user, isAdmin, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white">
       <div className="container mx-auto px-4 py-8">
+        {/* Header with Auth */}
+        <div className="flex justify-between items-center mb-8">
+          <div></div>
+          <div className="flex gap-2">
+            {user ? (
+              <>
+                {isAdmin && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/admin">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Admin
+                    </Link>
+                  </Button>
+                )}
+                <Button onClick={handleSignOut} variant="outline" size="sm">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Button asChild size="sm">
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
+          </div>
+        </div>
+
         {/* Hero Section */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-6">
