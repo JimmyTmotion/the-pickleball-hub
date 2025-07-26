@@ -76,6 +76,49 @@ const Home = () => {
           </p>
         </div>
 
+        {/* Features Section */}
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Everything You Need for Pickleball Organization
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            From intelligent scheduling to comprehensive match tracking, 
+            we've got all the tools to make your pickleball events successful.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3 mb-12">
+          <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
+            <div className="w-12 h-12 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+              <Users className="h-6 w-6 text-green-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">Smart Scheduling</h3>
+            <p className="text-gray-600 text-sm">
+              Advanced algorithms ensure fair rotation and balanced matchups for all players
+            </p>
+          </div>
+          
+          <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
+            <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+              <BarChart3 className="h-6 w-6 text-blue-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">Detailed Analytics</h3>
+            <p className="text-gray-600 text-sm">
+              Track partnerships, opponents, wins, losses, and player performance over time
+            </p>
+          </div>
+          
+          <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
+            <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
+              <Trophy className="h-6 w-6 text-purple-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">League Management</h3>
+            <p className="text-gray-600 text-sm">
+              Complete tournament management with league tables and historical records
+            </p>
+          </div>
+        </div>
+
         {/* Pickleball Tools Section */}
         <div className="mb-12">
           <div className="text-center mb-8">
@@ -87,7 +130,7 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
+          <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto mb-8">
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 text-2xl">
@@ -156,6 +199,15 @@ const Home = () => {
               </CardContent>
             </Card>
           </div>
+
+          <div className="text-center">
+            <Link to="/history">
+              <Button variant="outline" className="flex items-center gap-2 mx-auto">
+                <BarChart3 className="h-4 w-4" />
+                View Match Results & Analytics
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Upcoming Events Section */}
@@ -172,59 +224,8 @@ const Home = () => {
           <div className="mb-6">
             <EventList />
           </div>
-
-          <div className="text-center">
-            <Link to="/history">
-              <Button variant="outline" className="flex items-center gap-2 mx-auto">
-                <BarChart3 className="h-4 w-4" />
-                View Match Results & Analytics
-              </Button>
-            </Link>
-          </div>
         </div>
 
-        {/* Features Section */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Everything You Need for Pickleball Organization
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            From intelligent scheduling to comprehensive match tracking, 
-            we've got all the tools to make your pickleball events successful.
-          </p>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-            <div className="w-12 h-12 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-              <Users className="h-6 w-6 text-green-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Smart Scheduling</h3>
-            <p className="text-gray-600 text-sm">
-              Advanced algorithms ensure fair rotation and balanced matchups for all players
-            </p>
-          </div>
-          
-          <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-            <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-              <BarChart3 className="h-6 w-6 text-blue-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Detailed Analytics</h3>
-            <p className="text-gray-600 text-sm">
-              Track partnerships, opponents, wins, losses, and player performance over time
-            </p>
-          </div>
-          
-          <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-            <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
-              <Trophy className="h-6 w-6 text-purple-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">League Management</h3>
-            <p className="text-gray-600 text-sm">
-              Complete tournament management with league tables and historical records
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );
