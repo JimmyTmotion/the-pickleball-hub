@@ -46,6 +46,21 @@ const ContactForm: React.FC<ContactFormProps> = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
 
     try {
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('contact_queries')
+        .insert([{
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject || null,
+          message: formData.message,
+          status: 'new'
+        }]);
+
+      if (dbError) {
+        throw dbError;
+      }
+
       // Send email notification using edge function
       const { error: emailError } = await supabase.functions.invoke('send-contact-email', {
         body: {
@@ -57,7 +72,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ isOpen, onClose }) => {
       });
 
       if (emailError) {
-        throw emailError;
+        console.error('Email notification failed:', emailError);
+        // Don't throw error - the contact form submission is still successful
       }
 
       toast({
