@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { User, Session } from '@supabase/supabase-js';
 import { Mail, UserX, Trash2 } from 'lucide-react';
 import EventForm from '@/components/EventForm';
+import EventManagement from '@/components/EventManagement';
 
 interface Profile {
   id: string;
@@ -272,6 +273,8 @@ const Admin = () => {
             <EventForm onEventCreated={loadAdminData} />
           </CardContent>
         </Card>
+
+        <EventManagement onEventUpdated={loadAdminData} />
 
         <Card>
           <CardHeader>

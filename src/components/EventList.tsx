@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CalendarDays, MapPin } from 'lucide-react';
-import { Event, EventType, EventFilters } from '@/types/event';
-import { getUpcomingEvents } from '@/utils/eventStorage';
+import { Event, EventType, EventFilters, MatchType } from '@/types/event';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EventListProps {
   refreshTrigger?: number;
@@ -37,9 +37,39 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
     applyFilters();
   }, [events, filters]);
 
-  const loadEvents = () => {
-    const upcomingEvents = getUpcomingEvents();
-    setEvents(upcomingEvents);
+  const loadEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .gte('start_date', new Date().toISOString().split('T')[0])
+        .order('start_date', { ascending: true });
+
+      if (error) throw error;
+
+      const formattedEvents: Event[] = (data || []).map(event => ({
+        id: event.id,
+        title: event.title,
+        startDate: event.start_date,
+        endDate: event.end_date || undefined,
+        startTime: event.start_time || undefined,
+        endTime: event.end_time || undefined,
+        eventType: event.event_type as EventType,
+        matchTypes: event.match_types as MatchType[],
+        thumbnail: event.thumbnail || undefined,
+        prize: event.prize || undefined,
+        ratingRequired: event.rating_required || undefined,
+        indoor: event.indoor_outdoor,
+        additionalInfo: event.additional_info || undefined,
+        createdBy: event.created_by || undefined,
+        createdAt: event.created_at,
+        updatedAt: event.updated_at,
+      }));
+
+      setEvents(formattedEvents);
+    } catch (error) {
+      console.error('Error loading events:', error);
+    }
   };
 
   const applyFilters = () => {

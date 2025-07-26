@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { saveEvent } from '@/utils/eventStorage';
+import { supabase } from '@/integrations/supabase/client';
 import { EventType, MatchType } from '@/types/event';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -74,21 +74,25 @@ const EventForm = ({ onEventCreated }: EventFormProps) => {
     setIsLoading(true);
 
     try {
-      await saveEvent({
-        title: formData.title,
-        startDate: formData.startDate,
-        eventType: formData.eventType,
-        matchTypes: formData.matchTypes,
-        startTime: formData.startTime || undefined,
-        endDate: formData.endDate || undefined,
-        endTime: formData.endTime || undefined,
-        prize: formData.prize || undefined,
-        ratingRequired: formData.ratingRequired || undefined,
-        indoor: formData.indoor,
-        additionalInfo: formData.additionalInfo || undefined,
-        thumbnail: formData.thumbnail || undefined,
-        createdBy: user.id,
-      });
+      const { error } = await supabase
+        .from('events')
+        .insert({
+          title: formData.title,
+          start_date: formData.startDate,
+          event_type: formData.eventType,
+          match_types: formData.matchTypes,
+          start_time: formData.startTime || null,
+          end_date: formData.endDate || null,
+          end_time: formData.endTime || null,
+          prize: formData.prize || null,
+          rating_required: formData.ratingRequired || null,
+          indoor_outdoor: formData.indoor,
+          additional_info: formData.additionalInfo || null,
+          thumbnail: formData.thumbnail || null,
+          created_by: user.id,
+        });
+
+      if (error) throw error;
 
       toast({
         title: "Success! 🎾",

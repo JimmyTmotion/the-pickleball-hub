@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      events: {
+        Row: {
+          additional_info: string | null
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          end_time: string | null
+          event_type: string
+          id: string
+          indoor_outdoor: boolean | null
+          match_types: string[]
+          prize: string | null
+          rating_required: string | null
+          start_date: string
+          start_time: string | null
+          thumbnail: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          additional_info?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          event_type: string
+          id?: string
+          indoor_outdoor?: boolean | null
+          match_types?: string[]
+          prize?: string | null
+          rating_required?: string | null
+          start_date: string
+          start_time?: string | null
+          thumbnail?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          additional_info?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          event_type?: string
+          id?: string
+          indoor_outdoor?: boolean | null
+          match_types?: string[]
+          prize?: string | null
+          rating_required?: string | null
+          start_date?: string
+          start_time?: string | null
+          thumbnail?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
