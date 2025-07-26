@@ -8,6 +8,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import Home from "./pages/Home";
 import Index from "./pages/Index";
 import ScheduleHistory from "./pages/ScheduleHistory";
+import MyAccount from "./pages/MyAccount";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import MatchTimer from "./pages/MatchTimer";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/" element={<Home />} />
             <Route path="/scheduler" element={<Index />} />
             <Route path="/history" element={<ScheduleHistory />} />
+            <Route path="/account" element={<MyAccount />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/timer" element={<MatchTimer />} />

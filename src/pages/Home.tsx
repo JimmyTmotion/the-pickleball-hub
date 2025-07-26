@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Users, BarChart3, Trophy, Clock, TrendingUp, Shield, LogOut } from 'lucide-react';
+import { Calendar, Users, BarChart3, Trophy, Clock, TrendingUp, Shield, LogOut, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,12 @@ const Home = () => {
           <div className="flex gap-2">
             {user ? (
               <>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/account">
+                    <User className="h-4 w-4 mr-2" />
+                    My Account
+                  </Link>
+                </Button>
                 {isAdmin && (
                   <Button asChild variant="outline" size="sm">
                     <Link to="/admin">
