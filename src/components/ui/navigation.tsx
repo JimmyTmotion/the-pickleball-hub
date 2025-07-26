@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { User, Shield, LogOut, ShoppingBag, GraduationCap, Info, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import ContactForm from '../ContactForm';
 
 const Navigation = () => {
+  const [isContactFormOpen, setIsContactFormOpen] = useState(false);
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -51,7 +53,10 @@ const Navigation = () => {
             <button className="text-gray-400 cursor-not-allowed" disabled>
               About
             </button>
-            <button className="text-gray-400 cursor-not-allowed" disabled>
+            <button 
+              className="text-gray-600 hover:text-primary transition-colors cursor-pointer"
+              onClick={() => setIsContactFormOpen(true)}
+            >
               Contact Us
             </button>
           </div>
@@ -89,6 +94,11 @@ const Navigation = () => {
           </div>
         </div>
       </div>
+      
+      <ContactForm 
+        isOpen={isContactFormOpen} 
+        onClose={() => setIsContactFormOpen(false)} 
+      />
     </nav>
   );
 };
