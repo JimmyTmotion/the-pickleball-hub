@@ -62,6 +62,10 @@ const ScheduleHistory: React.FC = () => {
   };
 
   if (selectedSchedule) {
+    // Determine default tab based on match results
+    const hasCompletedMatches = selectedSchedule.schedule.matches.some(m => m.result?.completed);
+    const defaultTab = hasCompletedMatches ? "league" : "results";
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
         <div className="max-w-7xl mx-auto">
@@ -77,7 +81,7 @@ const ScheduleHistory: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-800">{selectedSchedule.name}</h1>
           </div>
           
-          <Tabs defaultValue="schedule" className="space-y-6">
+          <Tabs defaultValue={defaultTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
               <TabsTrigger value="results">Enter Results</TabsTrigger>
