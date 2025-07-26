@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { User, Session } from '@supabase/supabase-js';
+import { Mail, UserX, Trash2 } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -146,6 +148,83 @@ const Admin = () => {
     }
   };
 
+  const sendPasswordReset = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: `Password reset email sent to ${email}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteUserData = async (userId: string, email: string) => {
+    try {
+      // Delete user roles
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (rolesError) throw rolesError;
+
+      // Delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (profileError) throw profileError;
+
+      await loadAdminData();
+      toast({
+        title: "Success",
+        description: `User data deleted for ${email}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteUserCompletely = async (userId: string, email: string) => {
+    try {
+      // First delete user data
+      await deleteUserData(userId, email);
+      
+      // Then delete the user from auth (this requires admin privileges)
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (error) throw error;
+
+      await loadAdminData();
+      toast({
+        title: "Success",
+        description: `User ${email} completely deleted`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user completely. User data has been removed.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
@@ -218,14 +297,85 @@ const Admin = () => {
                         {new Date(profile.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleUserRole(profile.user_id, role)}
-                          disabled={profile.user_id === user?.id}
-                        >
-                          {role === 'admin' ? 'Remove Admin' : 'Make Admin'}
-                        </Button>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleUserRole(profile.user_id, role)}
+                            disabled={profile.user_id === user?.id}
+                          >
+                            {role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => sendPasswordReset(profile.email)}
+                          >
+                            <Mail className="h-4 w-4 mr-1" />
+                            Reset Password
+                          </Button>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={profile.user_id === user?.id}
+                              >
+                                <UserX className="h-4 w-4 mr-1" />
+                                Delete Data
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete User Data</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete all data for {profile.email} (profile, roles, etc.) but keep the user account. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteUserData(profile.user_id, profile.email)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete Data
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                disabled={profile.user_id === user?.id}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete User
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete User Completely</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the user account for {profile.email} and all associated data. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteUserCompletely(profile.user_id, profile.email)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete User
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
