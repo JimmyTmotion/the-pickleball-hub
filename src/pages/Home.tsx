@@ -5,6 +5,7 @@ import { Calendar, Users, BarChart3, Trophy, Clock, TrendingUp, Shield, LogOut, 
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import EventList from '@/components/EventList';
 
 const Home = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -75,109 +76,111 @@ const Home = () => {
           </p>
         </div>
 
-        {/* Main Tools */}
-        <div className="grid gap-8 md:grid-cols-3 mb-12">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-2xl">
-                <Calendar className="h-8 w-8 text-green-600" />
-                Pickleball Scheduler
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-6">
-                Create fair and balanced pickleball schedules that ensure everyone gets equal 
-                playing time and optimal court utilization with smart analytics.
-              </p>
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Users className="h-4 w-4" />
-                  Fair rotation system
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Clock className="h-4 w-4" />
-                  Optimized time management
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <TrendingUp className="h-4 w-4" />
-                  Partnership & opponent analytics
-                </div>
-              </div>
-              <Link to="/scheduler">
-                <Button className="w-full">
-                  Create Schedule
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+        {/* Pickleball Tools Section */}
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Pickleball Tools
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Essential tools for organizing and managing your pickleball activities
+            </p>
+          </div>
 
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-2xl">
-                <BarChart3 className="h-8 w-8 text-blue-600" />
-                Match Results & Analytics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-6">
-                Track match results, generate league tables, and view comprehensive analytics 
-                across all your tournament schedules and player performances.
-              </p>
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Trophy className="h-4 w-4" />
-                  League standings
+          <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <Calendar className="h-8 w-8 text-green-600" />
+                  Pickleball Scheduler
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-6">
+                  Create fair and balanced pickleball schedules that ensure everyone gets equal 
+                  playing time and optimal court utilization with smart analytics.
+                </p>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Users className="h-4 w-4" />
+                    Fair rotation system
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    Optimized time management
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <TrendingUp className="h-4 w-4" />
+                    Partnership & opponent analytics
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Users className="h-4 w-4" />
-                  Player statistics
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <BarChart3 className="h-4 w-4" />
-                  Historical analysis
-                </div>
-              </div>
-              <Link to="/history">
-                <Button variant="outline" className="w-full">
-                  View Results
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+                <Link to="/scheduler">
+                  <Button className="w-full">
+                    Create Schedule
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
 
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-2xl">
-                <Clock className="h-8 w-8 text-purple-600" />
-                Match Timer
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-6">
-                Keep track of match time with a large, easy-to-read timer. Perfect for 
-                timed matches with customisable duration and audio alerts.
-              </p>
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Clock className="h-4 w-4" />
-                  Customisable duration
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <Clock className="h-8 w-8 text-purple-600" />
+                  Match Timer
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-6">
+                  Keep track of match time with a large, easy-to-read timer. Perfect for 
+                  timed matches with customisable duration and audio alerts.
+                </p>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    Customisable duration
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Trophy className="h-4 w-4" />
+                    Fullscreen mode
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <BarChart3 className="h-4 w-4" />
+                    Audio & visual alerts
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Trophy className="h-4 w-4" />
-                  Fullscreen mode
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <BarChart3 className="h-4 w-4" />
-                  Audio & visual alerts
-                </div>
-              </div>
-              <Link to="/timer">
-                <Button variant="secondary" className="w-full">
-                  Start Timer
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+                <Link to="/timer">
+                  <Button variant="secondary" className="w-full">
+                    Start Timer
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Upcoming Events Section */}
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Upcoming Events
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Stay up to date with the latest pickleball tournaments and events
+            </p>
+          </div>
+          
+          <div className="mb-6">
+            <EventList />
+          </div>
+
+          <div className="text-center">
+            <Link to="/history">
+              <Button variant="outline" className="flex items-center gap-2 mx-auto">
+                <BarChart3 className="h-4 w-4" />
+                View Match Results & Analytics
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Features Section */}

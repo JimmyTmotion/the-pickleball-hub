@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { User, Session } from '@supabase/supabase-js';
 import { Mail, UserX, Trash2 } from 'lucide-react';
+import EventForm from '@/components/EventForm';
 
 interface Profile {
   id: string;
@@ -259,6 +260,18 @@ const Admin = () => {
             </Button>
           </div>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Event Management</CardTitle>
+            <CardDescription>
+              Create and manage pickleball events and tournaments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EventForm onEventCreated={loadAdminData} />
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
