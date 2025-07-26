@@ -10,7 +10,7 @@ import { Clock, Users, MapPin, Shuffle, Hash, Heart, Target } from 'lucide-react
 import { ScheduleConfig } from '@/types/schedule';
 
 interface ScheduleFormProps {
-  onGenerateSchedule: (config: ScheduleConfig) => void;
+  onGenerateSchedule: (config: ScheduleConfig, name?: string) => void;
   isLoading?: boolean;
 }
 
@@ -22,6 +22,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
   });
   
   const [playerNamesText, setPlayerNamesText] = React.useState('');
+  const [scheduleName, setScheduleName] = React.useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +39,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
       randomSeed: Math.floor(Math.random() * 1000000) // Generate random seed each time
     };
     
-    onGenerateSchedule(configWithNames);
+    onGenerateSchedule(configWithNames, scheduleName.trim() || undefined);
   };
 
   const updateConfig = (field: keyof ScheduleConfig, value: string | number | boolean) => {
@@ -108,6 +109,20 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                   className="mt-1"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="scheduleName" className="text-sm font-medium">
+                Schedule Name (optional)
+              </Label>
+              <Input
+                id="scheduleName"
+                type="text"
+                placeholder="e.g., Morning Tournament, Team Building Event..."
+                value={scheduleName}
+                onChange={(e) => setScheduleName(e.target.value)}
+                className="mt-1"
+              />
             </div>
 
             <div>

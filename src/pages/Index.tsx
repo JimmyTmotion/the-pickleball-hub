@@ -14,7 +14,7 @@ const Index = () => {
   const [currentConfig, setCurrentConfig] = useState<ScheduleConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGenerateSchedule = async (config: ScheduleConfig) => {
+  const handleGenerateSchedule = async (config: ScheduleConfig, name?: string) => {
     setIsLoading(true);
     
     try {
@@ -26,7 +26,7 @@ const Index = () => {
       setCurrentConfig(config);
       
       // Auto-save to history
-      saveSchedule(config, newSchedule);
+      saveSchedule(config, newSchedule, name);
       
       toast({
         title: "Schedule Generated! 🎾",
