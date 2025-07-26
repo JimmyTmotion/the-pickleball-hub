@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import EventList from '@/components/EventList';
 import Navigation from '@/components/ui/navigation';
 
+
 const Home = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
@@ -31,14 +32,14 @@ const Home = () => {
       <div className="container mx-auto px-4 py-8">
 
         {/* Hero Section */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="p-4 bg-gradient-to-r from-green-500 to-blue-500 rounded-full">
-              <Trophy className="h-10 w-10 text-white" />
-            </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-              The Pickleball Hub
-            </h1>
+        <div className="mb-12">
+          <div className="relative w-full h-64 md:h-80 lg:h-96 rounded-2xl overflow-hidden shadow-2xl">
+            <img 
+              src="/lovable-uploads/15d683bb-35ab-4c1d-8578-248581ef17fa.png" 
+              alt="Pickleball paddle and ball on court" 
+              className="w-full h-full object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
           </div>
         </div>
 
