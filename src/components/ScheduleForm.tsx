@@ -152,7 +152,9 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-2">
                   <Heart className="h-4 w-4 text-red-500" />
-                  <span className="text-sm">Unique Partnerships</span>
+                  <span className={`text-sm ${config.prioritizeUniquePartnerships !== false ? 'font-bold' : 'font-normal'}`}>
+                    Unique Partnerships
+                  </span>
                 </div>
                 <Switch
                   id="priorityToggle"
@@ -161,7 +163,9 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                 />
                 <div className="flex items-center gap-2">
                   <Target className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm">Varied Opposition</span>
+                  <span className={`text-sm ${config.prioritizeUniquePartnerships === false ? 'font-bold' : 'font-normal'}`}>
+                    Varied Opposition
+                  </span>
                 </div>
               </div>
               <p className="text-xs text-gray-500">
