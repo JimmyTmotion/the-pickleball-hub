@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3, ChevronDown } from 'lucide-react';
-import { getSavedSchedules, deleteSchedule, updateMatchResult } from '@/utils/scheduleStorage';
+import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3, ChevronDown, Edit } from 'lucide-react';
+import { getSavedSchedules, deleteSchedule, updateMatchResult, updatePlayerNames } from '@/utils/scheduleStorage';
 import { SavedSchedule, MatchResult } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import { Link } from 'react-router-dom';
@@ -14,6 +14,7 @@ import ScheduleDisplay from '@/components/ScheduleDisplay';
 import MatchResultInput from '@/components/MatchResultInput';
 import LeagueTable from '@/components/LeagueTable';
 import OverallLeaderboard from '@/components/OverallLeaderboard';
+import PlayerNameEditor from '@/components/PlayerNameEditor';
 
 const ScheduleHistory: React.FC = () => {
   const [savedSchedules, setSavedSchedules] = React.useState<SavedSchedule[]>([]);
@@ -39,6 +40,19 @@ const ScheduleHistory: React.FC = () => {
   const handleResultUpdate = async (matchId: number, result: MatchResult) => {
     if (selectedSchedule) {
       await updateMatchResult(selectedSchedule.id, matchId, result);
+      // Refresh the schedule data
+      const updatedSchedules = await getSavedSchedules();
+      setSavedSchedules(updatedSchedules);
+      const updatedSelected = updatedSchedules.find(s => s.id === selectedSchedule.id);
+      if (updatedSelected) {
+        setSelectedSchedule(updatedSelected);
+      }
+    }
+  };
+
+  const handlePlayerNamesUpdate = async (playerNames: Record<number, string>) => {
+    if (selectedSchedule) {
+      await updatePlayerNames(selectedSchedule.id, playerNames);
       // Refresh the schedule data
       const updatedSchedules = await getSavedSchedules();
       setSavedSchedules(updatedSchedules);
@@ -175,6 +189,31 @@ const ScheduleHistory: React.FC = () => {
                 <CollapsibleContent>
                   <CardContent>
                     <OverallLeaderboard savedSchedules={[selectedSchedule]} />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+
+            {/* Edit Player Names Section */}
+            <Collapsible>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader className="hover:bg-muted/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between text-xl font-bold text-indigo-700">
+                      <div className="flex items-center gap-2">
+                        <Edit className="h-5 w-5" />
+                        Edit Player Names
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <PlayerNameEditor 
+                      schedule={selectedSchedule.schedule} 
+                      onPlayerNamesUpdate={handlePlayerNamesUpdate}
+                    />
                   </CardContent>
                 </CollapsibleContent>
               </Card>
