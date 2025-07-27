@@ -81,6 +81,7 @@ export type Database = {
           created_by: string | null
           end_date: string | null
           end_time: string | null
+          event_link: string | null
           event_type: string
           id: string
           indoor_outdoor: boolean | null
@@ -99,6 +100,7 @@ export type Database = {
           created_by?: string | null
           end_date?: string | null
           end_time?: string | null
+          event_link?: string | null
           event_type: string
           id?: string
           indoor_outdoor?: boolean | null
@@ -117,6 +119,7 @@ export type Database = {
           created_by?: string | null
           end_date?: string | null
           end_time?: string | null
+          event_link?: string | null
           event_type?: string
           id?: string
           indoor_outdoor?: boolean | null
