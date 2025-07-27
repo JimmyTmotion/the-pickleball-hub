@@ -85,6 +85,7 @@ export type Database = {
           event_type: string
           id: string
           indoor_outdoor: boolean | null
+          location: string | null
           match_types: string[]
           prize: string | null
           rating_required: string | null
@@ -104,6 +105,7 @@ export type Database = {
           event_type: string
           id?: string
           indoor_outdoor?: boolean | null
+          location?: string | null
           match_types?: string[]
           prize?: string | null
           rating_required?: string | null
@@ -123,6 +125,7 @@ export type Database = {
           event_type?: string
           id?: string
           indoor_outdoor?: boolean | null
+          location?: string | null
           match_types?: string[]
           prize?: string | null
           rating_required?: string | null
