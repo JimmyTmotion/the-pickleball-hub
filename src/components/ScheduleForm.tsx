@@ -61,6 +61,20 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="scheduleName" className="text-sm font-medium">
+                Schedule Name (optional)
+              </Label>
+              <Input
+                id="scheduleName"
+                type="text"
+                placeholder="e.g., Morning Tournament, Team Building Event..."
+                value={scheduleName}
+                onChange={(e) => setScheduleName(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
             <div className="flex items-center gap-2">
               <Hash className="h-4 w-4 text-purple-600" />
               <div className="flex-1">
@@ -113,20 +127,6 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                   className="mt-1"
                 />
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="scheduleName" className="text-sm font-medium">
-                Schedule Name (optional)
-              </Label>
-              <Input
-                id="scheduleName"
-                type="text"
-                placeholder="e.g., Morning Tournament, Team Building Event..."
-                value={scheduleName}
-                onChange={(e) => setScheduleName(e.target.value)}
-                className="mt-1"
-              />
             </div>
 
             <div>
