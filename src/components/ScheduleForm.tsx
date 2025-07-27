@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Clock, Users, MapPin, Shuffle, Hash, Heart, Target } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ScheduleConfig } from '@/types/schedule';
 
 interface ScheduleFormProps {
@@ -18,7 +19,10 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
   const [config, setConfig] = React.useState<ScheduleConfig>({
     numRounds: 10,
     numPlayers: 8,
-    numCourts: 2
+    numCourts: 2,
+    prioritizeUniquePartnerships: true,
+    avoidConsecutiveSittingOut: true,
+    balanceMatchCounts: true
   });
   
   const [playerNamesText, setPlayerNamesText] = React.useState('');
@@ -141,25 +145,56 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
               </p>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {config.prioritizeUniquePartnerships ? (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">
+                Priority Setting
+              </Label>
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center gap-2">
                   <Heart className="h-4 w-4 text-red-500" />
-                ) : (
+                  <span className="text-sm">Unique Partnerships</span>
+                </div>
+                <Switch
+                  id="priorityToggle"
+                  checked={config.prioritizeUniquePartnerships !== false}
+                  onCheckedChange={(checked) => updateConfig('prioritizeUniquePartnerships', checked)}
+                />
+                <div className="flex items-center gap-2">
                   <Target className="h-4 w-4 text-blue-500" />
-                )}
-                <Label 
-                  htmlFor="priorityToggle" 
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  {config.prioritizeUniquePartnerships ? 'Prioritise Unique Partnerships' : 'Prioritise Varied Opposition'}
-                </Label>
+                  <span className="text-sm">Varied Opposition</span>
+                </div>
               </div>
-              <Switch
-                id="priorityToggle"
-                checked={config.prioritizeUniquePartnerships || false}
-                onCheckedChange={(checked) => updateConfig('prioritizeUniquePartnerships', checked)}
-              />
+              <p className="text-xs text-gray-500">
+                Toggle between prioritizing unique partnerships or varied opposition matchups
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">
+                Schedule Requirements
+              </Label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="avoidConsecutiveSittingOut"
+                    checked={config.avoidConsecutiveSittingOut !== false}
+                    onCheckedChange={(checked) => updateConfig('avoidConsecutiveSittingOut', checked)}
+                  />
+                  <Label htmlFor="avoidConsecutiveSittingOut" className="text-sm cursor-pointer">
+                    Avoid players sitting out twice in a row
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="balanceMatchCounts"
+                    checked={config.balanceMatchCounts !== false}
+                    onCheckedChange={(checked) => updateConfig('balanceMatchCounts', checked)}
+                  />
+                  <Label htmlFor="balanceMatchCounts" className="text-sm cursor-pointer">
+                    Balance match counts across all players
+                  </Label>
+                </div>
+              </div>
             </div>
           </div>
 

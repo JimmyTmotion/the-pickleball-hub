@@ -44,7 +44,7 @@ interface MatchCandidate {
 }
 
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
-  const { numRounds, numPlayers, numCourts, playerNames, randomSeed, prioritizeUniquePartnerships } = config;
+  const { numRounds, numPlayers, numCourts, playerNames, randomSeed, prioritizeUniquePartnerships, avoidConsecutiveSittingOut, balanceMatchCounts } = config;
   
   const rng = new SeededRandom(randomSeed || Date.now());
   
@@ -77,8 +77,8 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   const canPlayerPlay = (playerId: number, round: number): boolean => {
     const state = playerStates.get(playerId)!;
     
-    // Don't sit out 2 rounds in a row (unless unavoidable)
-    if (state.lastPlayedRound === round - 2) {
+    // Don't sit out 2 rounds in a row (unless unavoidable) - only if enabled
+    if (avoidConsecutiveSittingOut !== false && state.lastPlayedRound === round - 2) {
       return true; // Must play to avoid sitting out 2 in a row
     }
     
@@ -150,18 +150,20 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
       const state = playerStates.get(playerId)!;
       const count = state.matchCount;
       
-      // Massive bonus for players who must play to avoid sitting out 2 in a row
-      if (state.lastPlayedRound === round - 2) {
+      // Massive bonus for players who must play to avoid sitting out 2 in a row - only if enabled
+      if (avoidConsecutiveSittingOut !== false && state.lastPlayedRound === round - 2) {
         mustPlayBonus += 10000;
       }
       
-      // Balance match counts
-      if (count === minGlobalCount) {
-        balanceScore += 5000;
-      } else if (count === minGlobalCount + 1) {
-        balanceScore += 1000;
-      } else {
-        balanceScore -= (count - minGlobalCount) * 2000;
+      // Balance match counts - only if enabled
+      if (balanceMatchCounts !== false) {
+        if (count === minGlobalCount) {
+          balanceScore += 5000;
+        } else if (count === minGlobalCount + 1) {
+          balanceScore += 1000;
+        } else {
+          balanceScore -= (count - minGlobalCount) * 2000;
+        }
       }
     }
     

@@ -149,7 +149,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
       </div>
 
       {/* Schedule Overview */}
-      <Collapsible defaultOpen>
+      <Collapsible>
         <Card>
           <CollapsibleTrigger className="w-full">
             <CardHeader className="hover:bg-muted/50 transition-colors">
