@@ -38,10 +38,10 @@ const ImageManagement = () => {
     try {
       setLoading(true);
 
-      // Get all files from the event-thumbnails bucket
+      // Get all files from the thumbnails folder in the event-thumbnails bucket
       const { data: files, error: filesError } = await supabase.storage
         .from('event-thumbnails')
-        .list('', {
+        .list('thumbnails', {
           sortBy: { column: 'created_at', order: 'desc' }
         });
 
@@ -59,10 +59,10 @@ const ImageManagement = () => {
       
       for (const file of files || []) {
         if (file.name && !file.name.endsWith('/')) { // Skip folders
-          // Get public URL
+          // Get public URL (include the thumbnails folder path)
           const { data: urlData } = supabase.storage
             .from('event-thumbnails')
-            .getPublicUrl(file.name);
+            .getPublicUrl(`thumbnails/${file.name}`);
 
           // Check which events use this image
           const usedInEvents = events
@@ -101,10 +101,10 @@ const ImageManagement = () => {
     try {
       setDeleting(fileName);
 
-      // Delete the file from storage
+      // Delete the file from storage (include the thumbnails folder path)
       const { error } = await supabase.storage
         .from('event-thumbnails')
-        .remove([fileName]);
+        .remove([`thumbnails/${fileName}`]);
 
       if (error) throw error;
 
