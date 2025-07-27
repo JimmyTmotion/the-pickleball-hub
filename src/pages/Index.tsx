@@ -73,38 +73,7 @@ const Index = () => {
             </Link>
           </div>
 
-          {/* Features */}
-          <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
-            <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-              <div className="w-12 h-12 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                <Users className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Fair Rotation</h3>
-              <p className="text-gray-600 text-sm">
-                Ensures all players get equal playing time and rest periods
-              </p>
-            </div>
-            
-            <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-              <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                <Clock className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Time Management</h3>
-              <p className="text-gray-600 text-sm">
-                Optimizes court usage within your available time slots
-              </p>
-            </div>
-            
-            <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-              <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Smart Analytics</h3>
-              <p className="text-gray-600 text-sm">
-                Provides insights on player statistics and schedule balance
-              </p>
-            </div>
-          </div>
+    
         </AnimatedSection>
 
         {/* Main Content */}
