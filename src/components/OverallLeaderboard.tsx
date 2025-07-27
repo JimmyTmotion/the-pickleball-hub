@@ -7,9 +7,10 @@ import { Trophy, Crown, Medal, Award } from 'lucide-react';
 
 interface OverallLeaderboardProps {
   savedSchedules: SavedSchedule[];
+  showTitle?: boolean;
 }
 
-const OverallLeaderboard: React.FC<OverallLeaderboardProps> = ({ savedSchedules }) => {
+const OverallLeaderboard: React.FC<OverallLeaderboardProps> = ({ savedSchedules, showTitle = true }) => {
   const calculateOverallStats = (): PlayerLeagueStats[] => {
     const statsMap = new Map<string, PlayerLeagueStats>();
 
@@ -121,12 +122,14 @@ const OverallLeaderboard: React.FC<OverallLeaderboardProps> = ({ savedSchedules 
   if (playerStats.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5" />
-            Overall Leaderboard
-          </CardTitle>
-        </CardHeader>
+        {showTitle && (
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5" />
+              Overall Leaderboard
+            </CardTitle>
+          </CardHeader>
+        )}
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             No completed matches across all schedules yet.
@@ -138,17 +141,19 @@ const OverallLeaderboard: React.FC<OverallLeaderboardProps> = ({ savedSchedules 
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-5 w-5" />
-            Overall Leaderboard
-          </div>
-          <Badge variant="secondary">
-            {totalCompletedMatches} total matches completed
-          </Badge>
-        </CardTitle>
-      </CardHeader>
+      {showTitle && (
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-5 w-5" />
+              Overall Leaderboard
+            </div>
+            <Badge variant="secondary">
+              {totalCompletedMatches} total matches completed
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+      )}
       <CardContent>
         <Table>
           <TableHeader>
