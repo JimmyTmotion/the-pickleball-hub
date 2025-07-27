@@ -153,8 +153,33 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
     }
   };
 
-  const handleDeleteEvent = async (eventId: string, eventTitle: string) => {
+  const handleDeleteEvent = async (eventId: string, eventTitle: string, thumbnail?: string) => {
     try {
+      // First delete the associated image if it exists
+      if (thumbnail) {
+        try {
+          // Extract filename from the thumbnail URL
+          const url = new URL(thumbnail);
+          const pathParts = url.pathname.split('/');
+          const fileName = pathParts[pathParts.length - 1];
+          
+          if (fileName && fileName !== '') {
+            const { error: storageError } = await supabase.storage
+              .from('event-thumbnails')
+              .remove([fileName]);
+            
+            if (storageError) {
+              console.warn('Failed to delete image from storage:', storageError);
+              // Continue with event deletion even if image deletion fails
+            }
+          }
+        } catch (imageError) {
+          console.warn('Error processing thumbnail URL:', imageError);
+          // Continue with event deletion even if image processing fails
+        }
+      }
+
+      // Then delete the event
       const { error } = await supabase
         .from('events')
         .delete()
@@ -164,7 +189,7 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
 
       toast({
         title: "Success",
-        description: `Event "${eventTitle}" deleted successfully`,
+        description: `Event "${eventTitle}" and associated image deleted successfully`,
       });
 
       await loadEvents();
@@ -425,7 +450,7 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => handleDeleteEvent(event.id, event.title)}
+                            onClick={() => handleDeleteEvent(event.id, event.title, event.thumbnail)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
                             Delete

@@ -9,10 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { User, Session } from '@supabase/supabase-js';
-import { Mail, UserX, Trash2, MessageSquare, Calendar, Users, Plus } from 'lucide-react';
+import { Mail, UserX, Trash2, MessageSquare, Calendar, Users, Plus, Image } from 'lucide-react';
 import EventFormModal from '@/components/EventFormModal';
 import EventManagement from '@/components/EventManagement';
 import ContactManagement from '@/components/ContactManagement';
+import ImageManagement from '@/components/ImageManagement';
 
 interface Profile {
   id: string;
@@ -266,10 +267,14 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="events" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Events
+            </TabsTrigger>
+            <TabsTrigger value="images" className="flex items-center gap-2">
+              <Image className="h-4 w-4" />
+              Images
             </TabsTrigger>
             <TabsTrigger value="contact" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -306,6 +311,10 @@ const Admin = () => {
             />
 
             <EventManagement onEventUpdated={loadAdminData} />
+          </TabsContent>
+
+          <TabsContent value="images">
+            <ImageManagement />
           </TabsContent>
 
           <TabsContent value="contact">
