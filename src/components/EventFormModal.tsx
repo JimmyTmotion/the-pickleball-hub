@@ -48,10 +48,11 @@ const EventFormModal = ({ open, onOpenChange, onEventCreated }: EventFormModalPr
     matchTypes: [] as MatchType[],
     prize: '',
     ratingRequired: '',
-    indoor: false,
+    indoor: 'Indoor Event',
     additionalInfo: '',
     thumbnail: '',
-    eventLink: ''
+    eventLink: '',
+    location: ''
   });
 
   const resetForm = () => {
@@ -65,10 +66,11 @@ const EventFormModal = ({ open, onOpenChange, onEventCreated }: EventFormModalPr
       matchTypes: [],
       prize: '',
       ratingRequired: '',
-      indoor: false,
+      indoor: 'Indoor Event',
       additionalInfo: '',
       thumbnail: '',
-      eventLink: ''
+      eventLink: '',
+      location: ''
     });
   };
 
@@ -108,10 +110,11 @@ const EventFormModal = ({ open, onOpenChange, onEventCreated }: EventFormModalPr
           end_time: formData.endTime || null,
           prize: formData.prize || null,
           rating_required: formData.ratingRequired || null,
-          indoor_outdoor: formData.indoor,
+          indoor_outdoor: formData.indoor === 'Indoor Event',
           additional_info: formData.additionalInfo || null,
           thumbnail: formData.thumbnail || null,
           event_link: formData.eventLink || null,
+          location: formData.location || null,
           created_by: user.id,
         });
 
@@ -191,15 +194,25 @@ const EventFormModal = ({ open, onOpenChange, onEventCreated }: EventFormModalPr
                 />
               </div>
               <div>
-                <Label htmlFor="eventLink">Event Link</Label>
+                <Label htmlFor="location">Location</Label>
                 <Input
-                  id="eventLink"
-                  type="url"
-                  placeholder="https://example.com/event-registration"
-                  value={formData.eventLink}
-                  onChange={(e) => setFormData(prev => ({ ...prev, eventLink: e.target.value }))}
+                  id="location"
+                  placeholder="e.g., Downtown Community Center"
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="eventLink">Event Link</Label>
+              <Input
+                id="eventLink"
+                type="url"
+                placeholder="https://example.com/event-registration"
+                value={formData.eventLink}
+                onChange={(e) => setFormData(prev => ({ ...prev, eventLink: e.target.value }))}
+              />
             </div>
 
             <div>
@@ -302,13 +315,20 @@ const EventFormModal = ({ open, onOpenChange, onEventCreated }: EventFormModalPr
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="indoor"
-                checked={formData.indoor}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, indoor: checked }))}
-              />
-              <Label htmlFor="indoor">Indoor Event</Label>
+            <div>
+              <Label htmlFor="indoor">Event Type</Label>
+              <Select 
+                value={formData.indoor} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, indoor: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select venue type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Indoor Event">Indoor Event</SelectItem>
+                  <SelectItem value="Outdoor Event">Outdoor Event</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
