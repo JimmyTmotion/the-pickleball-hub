@@ -72,10 +72,6 @@ const Index = () => {
               </Button>
             </Link>
           </div>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-            Create fair and balanced pickleball schedules that ensure everyone gets equal playing time 
-            and optimal court utilization.
-          </p>
 
           {/* Features */}
           <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
