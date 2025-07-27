@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import AnimatedSection from '@/components/AnimatedSection';
 import { 
   User, 
   Calendar, 
@@ -198,7 +199,7 @@ const MyAccount: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-4 mb-6">
+          <AnimatedSection animation="fade-up" className="flex items-center gap-4 mb-6">
             <Button 
               onClick={() => setSelectedSchedule(null)}
               variant="outline"
@@ -208,9 +209,10 @@ const MyAccount: React.FC = () => {
               Back to My Account
             </Button>
             <h1 className="text-3xl font-bold text-gray-800">{selectedSchedule.name}</h1>
-          </div>
+          </AnimatedSection>
           
-          <Tabs defaultValue="schedule" className="space-y-6">
+          <AnimatedSection animation="fade-up" delay={100}>
+            <Tabs defaultValue="schedule" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
               <TabsTrigger value="results">Enter Results</TabsTrigger>
@@ -247,7 +249,8 @@ const MyAccount: React.FC = () => {
             <TabsContent value="overall">
               <OverallLeaderboard savedSchedules={[selectedSchedule]} />
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          </AnimatedSection>
         </div>
       </div>
     );
@@ -256,7 +259,7 @@ const MyAccount: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex items-center gap-4 mb-8">
+        <AnimatedSection animation="fade-up" className="flex items-center gap-4 mb-8">
           <Link to="/">
             <Button variant="outline" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
@@ -264,9 +267,10 @@ const MyAccount: React.FC = () => {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold text-gray-800">My Account</h1>
-        </div>
+        </AnimatedSection>
 
-        <Tabs defaultValue="profile" className="space-y-6">
+        <AnimatedSection animation="fade-up" delay={100}>
+          <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -521,7 +525,8 @@ const MyAccount: React.FC = () => {
               </>
             )}
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </AnimatedSection>
       </div>
     </div>
   );

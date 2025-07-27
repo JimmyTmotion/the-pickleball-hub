@@ -26,8 +26,8 @@ const Home = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoading(false);
-    }, 1500);
-
+    }, 500);
+    
     return () => clearTimeout(timer);
   }, []);
 

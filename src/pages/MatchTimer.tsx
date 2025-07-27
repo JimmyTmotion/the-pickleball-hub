@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import AnimatedSection from '@/components/AnimatedSection';
 
 const MatchTimer = () => {
   const [minutes, setMinutes] = useState(15);
@@ -135,7 +136,7 @@ const MatchTimer = () => {
     }`}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <AnimatedSection animation="fade-up" className="flex justify-between items-center mb-8">
           <Button asChild variant="outline" size="sm">
             <Link to="/">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -156,11 +157,12 @@ const MatchTimer = () => {
               Fullscreen
             </Button>
           </div>
-        </div>
+        </AnimatedSection>
 
         {/* Settings Panel */}
         {showSettings && (
-          <Card className="mb-8 max-w-md mx-auto">
+          <AnimatedSection animation="scale-in" delay={100}>
+            <Card className="mb-8 max-w-md mx-auto">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TimerIcon className="h-5 w-5" />
@@ -201,11 +203,12 @@ const MatchTimer = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </AnimatedSection>
         )}
 
         {/* Timer Display */}
-        <div className="flex justify-center mb-8">
+        <AnimatedSection animation="scale-in" delay={showSettings ? 200 : 100} className="flex justify-center mb-8">
           <Card className={`w-full max-w-2xl ${isFlashing ? 'bg-white/90' : ''}`}>
             <CardContent className="p-8 text-center">
               <div className={`text-8xl md:text-9xl font-mono font-bold mb-8 ${
@@ -246,14 +249,14 @@ const MatchTimer = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </AnimatedSection>
 
         {/* Instructions */}
         {!isRunning && !isFinished && (
-          <div className="text-center text-gray-600 max-w-md mx-auto">
+          <AnimatedSection animation="fade-in" delay={300} className="text-center text-gray-600 max-w-md mx-auto">
             <p className="mb-2">Set your match duration and click Start to begin the timer.</p>
             <p className="text-sm">The timer will flash red and sound a siren when time is up.</p>
-          </div>
+          </AnimatedSection>
         )}
       </div>
     </div>

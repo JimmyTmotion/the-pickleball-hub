@@ -20,7 +20,7 @@ const AnimatedSection = ({
   });
 
   const getAnimationClasses = () => {
-    const baseClasses = 'transition-all duration-700 ease-out';
+    const baseClasses = 'transition-all duration-500 ease-out';
     
     if (!isVisible) {
       switch (animation) {

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Zap, Users, Clock, TrendingUp, History, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
+import AnimatedSection from '@/components/AnimatedSection';
 
 const Index = () => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -56,7 +57,7 @@ const Index = () => {
       <Navigation />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
+        <AnimatedSection className="text-center mb-8" animation="fade-up">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-r from-green-500 to-blue-500 rounded-full">
               <Zap className="h-8 w-8 text-white" />
@@ -108,20 +109,21 @@ const Index = () => {
               </p>
             </div>
           </div>
-        </div>
+        </AnimatedSection>
 
         {/* Main Content */}
-        <div className="grid gap-8 lg:grid-cols-1 xl:grid-cols-3">
-          {/* Form Section */}
-          <div className="xl:col-span-1">
-            <ScheduleForm 
-              onGenerateSchedule={handleGenerateSchedule}
-              isLoading={isLoading}
-            />
-          </div>
+        <AnimatedSection animation="fade-up" delay={100}>
+          <div className="grid gap-8 lg:grid-cols-1 xl:grid-cols-3">
+            {/* Form Section */}
+            <div className="xl:col-span-1">
+              <ScheduleForm 
+                onGenerateSchedule={handleGenerateSchedule}
+                isLoading={isLoading}
+              />
+            </div>
 
-          {/* Schedule Display */}
-          <div className="xl:col-span-2 space-y-6">
+            {/* Schedule Display */}
+            <div className="xl:col-span-2 space-y-6">
             {schedule ? (
               <>
                 {/* Regenerate Button */}
@@ -154,8 +156,9 @@ const Index = () => {
                 </div>
               </div>
             )}
+            </div>
           </div>
-        </div>
+        </AnimatedSection>
       </div>
     </div>
   );

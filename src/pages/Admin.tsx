@@ -14,6 +14,7 @@ import EventFormModal from '@/components/EventFormModal';
 import EventManagement from '@/components/EventManagement';
 import ContactManagement from '@/components/ContactManagement';
 import ImageManagement from '@/components/ImageManagement';
+import AnimatedSection from '@/components/AnimatedSection';
 
 interface Profile {
   id: string;
@@ -251,7 +252,7 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
+        <AnimatedSection animation="fade-up" className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground">Manage users and system settings</p>
@@ -264,9 +265,10 @@ const Admin = () => {
               Sign Out
             </Button>
           </div>
-        </div>
+        </AnimatedSection>
 
-        <Tabs defaultValue="events" className="w-full">
+        <AnimatedSection animation="fade-up" delay={100}>
+          <Tabs defaultValue="events" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -447,7 +449,8 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </AnimatedSection>
       </div>
     </div>
   );

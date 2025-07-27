@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Play, Pause, RotateCcw, ChevronRight, Trophy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import LeagueTable from '@/components/LeagueTable';
+import AnimatedSection from '@/components/AnimatedSection';
 
 interface TournamentState {
   schedule: Schedule;
@@ -152,7 +153,7 @@ const Tournament = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50">
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center mb-8">
+          <AnimatedSection animation="scale-in" className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <Trophy className="h-12 w-12 text-yellow-500" />
               <h1 className="text-4xl font-bold text-gray-900">Tournament Complete!</h1>
@@ -160,18 +161,18 @@ const Tournament = () => {
             <p className="text-lg text-gray-600">
               Congratulations to all players! Here are the final standings:
             </p>
-          </div>
+          </AnimatedSection>
 
-          <div className="max-w-4xl mx-auto mb-8">
+          <AnimatedSection animation="fade-up" delay={100} className="max-w-4xl mx-auto mb-8">
             <LeagueTable schedule={schedule} title="Final Tournament Standings" />
-          </div>
+          </AnimatedSection>
 
-          <div className="text-center">
+          <AnimatedSection animation="fade-up" delay={200} className="text-center">
             <Button onClick={() => navigate('/scheduler')} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Scheduler
             </Button>
-          </div>
+          </AnimatedSection>
         </div>
       </div>
     );
@@ -181,7 +182,7 @@ const Tournament = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-white">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <AnimatedSection animation="fade-up" className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate('/scheduler')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -198,11 +199,12 @@ const Tournament = () => {
               {formatTime(timerSeconds)}
             </Badge>
           </div>
-        </div>
+        </AnimatedSection>
 
         {/* Timer Controls */}
         {!showResults && (
-          <Card className="mb-8">
+          <AnimatedSection animation="scale-in" delay={100}>
+            <Card className="mb-8">
             <CardHeader>
               <CardTitle className="text-center">Round {currentRound} Timer</CardTitle>
             </CardHeader>
@@ -230,11 +232,12 @@ const Tournament = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </AnimatedSection>
         )}
 
         {/* Match Display */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+        <AnimatedSection animation="fade-up" delay={150} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
           {currentRoundMatches.map((match) => (
             <Card key={match.id} className="border-l-4 border-l-blue-500">
               <CardHeader>
@@ -293,11 +296,12 @@ const Tournament = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </AnimatedSection>
 
         {/* Sitting Out */}
         {sittingOut.length > 0 && (
-          <Card className="mb-8">
+          <AnimatedSection animation="fade-in" delay={200}>
+            <Card className="mb-8">
             <CardContent className="p-4">
               <div className="text-center">
                 <span className="font-semibold text-gray-700">Sitting Out This Round: </span>
@@ -306,12 +310,14 @@ const Tournament = () => {
                 </span>
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </AnimatedSection>
         )}
 
         {/* Results Actions */}
         {showResults && (
-          <Card>
+          <AnimatedSection animation="scale-in" delay={250}>
+            <Card>
             <CardContent className="p-6">
               <div className="text-center space-y-4">
                 <h3 className="text-xl font-semibold">Enter Match Results</h3>
@@ -342,7 +348,8 @@ const Tournament = () => {
                 )}
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </AnimatedSection>
         )}
       </div>
     </div>

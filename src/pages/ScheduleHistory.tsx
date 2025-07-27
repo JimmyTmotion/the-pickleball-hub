@@ -15,6 +15,7 @@ import MatchResultInput from '@/components/MatchResultInput';
 import LeagueTable from '@/components/LeagueTable';
 import OverallLeaderboard from '@/components/OverallLeaderboard';
 import PlayerNameEditor from '@/components/PlayerNameEditor';
+import AnimatedSection from '@/components/AnimatedSection';
 
 const ScheduleHistory: React.FC = () => {
   const [savedSchedules, setSavedSchedules] = React.useState<SavedSchedule[]>([]);
@@ -85,7 +86,7 @@ const ScheduleHistory: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-4 mb-6">
+          <AnimatedSection animation="fade-up" className="flex items-center gap-4 mb-6">
             <Button 
               onClick={() => setSelectedSchedule(null)}
               variant="outline"
@@ -95,9 +96,9 @@ const ScheduleHistory: React.FC = () => {
               Back to History
             </Button>
             <h1 className="text-3xl font-bold text-gray-800">{selectedSchedule.name}</h1>
-          </div>
+          </AnimatedSection>
           
-          <div className="space-y-6">
+          <AnimatedSection animation="fade-up" delay={100} className="space-y-6">
             {/* Schedule Section */}
             <Collapsible>
               <Card>
@@ -218,7 +219,7 @@ const ScheduleHistory: React.FC = () => {
                 </CollapsibleContent>
               </Card>
             </Collapsible>
-          </div>
+          </AnimatedSection>
         </div>
       </div>
     );
@@ -229,7 +230,7 @@ const ScheduleHistory: React.FC = () => {
       <Navigation />
       <div className="p-4">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex items-center justify-between mb-8">
+        <AnimatedSection animation="fade-up" className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link to="/scheduler">
               <Button variant="outline" className="flex items-center gap-2">
@@ -239,45 +240,46 @@ const ScheduleHistory: React.FC = () => {
             </Link>
             <h1 className="text-3xl font-bold text-gray-800">Schedule History & Results</h1>
           </div>
-        </div>
+        </AnimatedSection>
 
-        {savedSchedules.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-600 mb-2">No Saved Schedules</h3>
-              <p className="text-gray-500 mb-4">Generate your first schedule to see it here!</p>
-              <Link to="/scheduler">
-                <Button>Generate Schedule</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* Overall Leaderboard */}
-            <Collapsible defaultOpen={false}>
-              <Card>
-                <CollapsibleTrigger className="w-full">
-                  <CardHeader className="hover:bg-muted/50 transition-colors">
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5" />
-                        Overall Leaderboard
-                      </div>
-                      <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
-                    </CardTitle>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent>
-                    <OverallLeaderboard savedSchedules={savedSchedules} />
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-            
-            {/* Schedule List */}
-            <div className="space-y-4">
+        <AnimatedSection animation="fade-up" delay={100}>
+          {savedSchedules.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-600 mb-2">No Saved Schedules</h3>
+                <p className="text-gray-500 mb-4">Generate your first schedule to see it here!</p>
+                <Link to="/scheduler">
+                  <Button>Generate Schedule</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Overall Leaderboard */}
+              <Collapsible defaultOpen={false}>
+                <Card>
+                  <CollapsibleTrigger className="w-full">
+                    <CardHeader className="hover:bg-muted/50 transition-colors">
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5" />
+                          Overall Leaderboard
+                        </div>
+                        <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent>
+                      <OverallLeaderboard savedSchedules={savedSchedules} />
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+              
+              {/* Schedule List */}
+              <div className="space-y-4">
               <h2 className="text-2xl font-bold text-gray-800">Individual Schedules</h2>
               <div className="grid gap-4">
                 {savedSchedules.map((schedule) => {
@@ -382,9 +384,10 @@ const ScheduleHistory: React.FC = () => {
                 })}
               </div>
             </div>
-          </>
-        )}
-        </div>
+            </>
+          )}
+        </AnimatedSection>
+      </div>
       </div>
     </div>
   );
