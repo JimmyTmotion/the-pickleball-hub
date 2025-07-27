@@ -10,18 +10,18 @@ max_rows = 1000
 [auth]
 enabled = true
 port = 54324
-site_url = "http://127.0.0.1:3000"
-additional_redirect_urls = ["https://lovable.dev"]
+site_url = "https://the-pickleball-hub.lovable.app"
+additional_redirect_urls = ["https://lovable.dev", "https://the-pickleball-hub.lovable.app"]
 jwt_expiry = 3600
 refresh_token_rotation_enabled = true
 refresh_token_reuse_interval = 10
 enable_signup = true
-enable_confirmations = false
+enable_confirmations = true
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+enable_confirmations = true
 
 [auth.sms]
 enable_signup = false
