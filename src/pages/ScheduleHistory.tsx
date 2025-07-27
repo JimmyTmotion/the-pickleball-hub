@@ -215,7 +215,26 @@ const ScheduleHistory: React.FC = () => {
         ) : (
           <>
             {/* Overall Leaderboard */}
-            <OverallLeaderboard savedSchedules={savedSchedules} />
+            <Collapsible defaultOpen={false}>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader className="hover:bg-muted/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Overall Leaderboard
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <OverallLeaderboard savedSchedules={savedSchedules} />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
             
             {/* Schedule List */}
             <div className="space-y-4">
