@@ -10,8 +10,8 @@ max_rows = 1000
 [auth]
 enabled = true
 port = 54324
-site_url = "https://the-pickleball-hub.lovable.app"
-additional_redirect_urls = ["https://lovable.dev", "https://the-pickleball-hub.lovable.app"]
+site_url = "https://thepickleballhub.co.uk"
+additional_redirect_urls = ["https://lovable.dev", "https://thepickleballhub.co.uk"]
 jwt_expiry = 3600
 refresh_token_rotation_enabled = true
 refresh_token_reuse_interval = 10
