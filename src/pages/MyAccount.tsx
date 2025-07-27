@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,7 +21,8 @@ import {
   X,
   Hash,
   Users,
-  MapPin
+  MapPin,
+  ChevronDown
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -414,7 +416,27 @@ const MyAccount: React.FC = () => {
               </Card>
             ) : (
               <>
-                <OverallLeaderboard savedSchedules={savedSchedules} />
+                {/* Overall Leaderboard */}
+                <Collapsible defaultOpen={false}>
+                  <Card>
+                    <CollapsibleTrigger className="w-full">
+                      <CardHeader className="hover:bg-muted/50 transition-colors">
+                        <CardTitle className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="h-5 w-5" />
+                            Overall Leaderboard
+                          </div>
+                          <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
+                        </CardTitle>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent>
+                        <OverallLeaderboard savedSchedules={savedSchedules} />
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
                 
                 <div className="space-y-4">
                   <h2 className="text-2xl font-bold text-gray-800">My Schedules</h2>
