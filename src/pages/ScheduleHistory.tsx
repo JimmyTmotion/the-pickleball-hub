@@ -8,6 +8,7 @@ import { getSavedSchedules, deleteSchedule, updateMatchResult } from '@/utils/sc
 import { SavedSchedule, MatchResult } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import { Link } from 'react-router-dom';
+import Navigation from '@/components/ui/navigation';
 import ScheduleDisplay from '@/components/ScheduleDisplay';
 import MatchResultInput from '@/components/MatchResultInput';
 import LeagueTable from '@/components/LeagueTable';
@@ -184,7 +185,9 @@ const ScheduleHistory: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+      <Navigation />
+      <div className="p-4">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -302,6 +305,7 @@ const ScheduleHistory: React.FC = () => {
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );

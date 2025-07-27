@@ -15,10 +15,6 @@ const Index = () => {
   const [currentConfig, setCurrentConfig] = useState<ScheduleConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Clear all schedules on component mount
-  React.useEffect(() => {
-    clearAllSchedules();
-  }, []);
 
   const handleGenerateSchedule = async (config: ScheduleConfig, name?: string) => {
     setIsLoading(true);
