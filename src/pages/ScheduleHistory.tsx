@@ -188,7 +188,7 @@ const ScheduleHistory: React.FC = () => {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent>
-                    <OverallLeaderboard savedSchedules={[selectedSchedule]} showTitle={false} />
+                    <OverallLeaderboard savedSchedules={[selectedSchedule]} />
                   </CardContent>
                 </CollapsibleContent>
               </Card>
@@ -270,7 +270,7 @@ const ScheduleHistory: React.FC = () => {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent>
-                    <OverallLeaderboard savedSchedules={savedSchedules} showTitle={false} />
+                    <OverallLeaderboard savedSchedules={savedSchedules} />
                   </CardContent>
                 </CollapsibleContent>
               </Card>

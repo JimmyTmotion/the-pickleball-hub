@@ -7,10 +7,9 @@ import { Trophy, Crown, Medal, Award } from 'lucide-react';
 
 interface OverallLeaderboardProps {
   savedSchedules: SavedSchedule[];
-  showTitle?: boolean;
 }
 
-const OverallLeaderboard: React.FC<OverallLeaderboardProps> = ({ savedSchedules, showTitle = true }) => {
+const OverallLeaderboard: React.FC<OverallLeaderboardProps> = ({ savedSchedules }) => {
   const calculateOverallStats = (): PlayerLeagueStats[] => {
     const statsMap = new Map<string, PlayerLeagueStats>();
 
@@ -122,14 +121,6 @@ const OverallLeaderboard: React.FC<OverallLeaderboardProps> = ({ savedSchedules,
   if (playerStats.length === 0) {
     return (
       <Card>
-        {showTitle && (
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5" />
-              Overall Leaderboard
-            </CardTitle>
-          </CardHeader>
-        )}
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             No completed matches across all schedules yet.
@@ -141,20 +132,12 @@ const OverallLeaderboard: React.FC<OverallLeaderboardProps> = ({ savedSchedules,
 
   return (
     <Card>
-      {showTitle && (
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5" />
-              Overall Leaderboard
-            </div>
-            <Badge variant="secondary">
-              {totalCompletedMatches} total matches completed
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-      )}
       <CardContent>
+        <div className="flex justify-end mb-4">
+          <Badge variant="secondary">
+            {totalCompletedMatches} total matches completed
+          </Badge>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
