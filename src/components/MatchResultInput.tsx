@@ -15,13 +15,25 @@ const MatchResultInput: React.FC<MatchResultInputProps> = ({ match, onResultUpda
   const [team1Score, setTeam1Score] = useState(match.result?.team1Score?.toString() || '');
   const [team2Score, setTeam2Score] = useState(match.result?.team2Score?.toString() || '');
 
-  const handleSaveResult = () => {
-    const result: MatchResult = {
-      team1Score: parseInt(team1Score) || 0,
-      team2Score: parseInt(team2Score) || 0,
-      completed: true
-    };
-    onResultUpdate(match.id, result);
+  const autoSaveResult = (t1Score: string, t2Score: string) => {
+    if (t1Score !== '' && t2Score !== '' && !isNaN(parseInt(t1Score)) && !isNaN(parseInt(t2Score))) {
+      const result: MatchResult = {
+        team1Score: parseInt(t1Score),
+        team2Score: parseInt(t2Score),
+        completed: true
+      };
+      onResultUpdate(match.id, result);
+    }
+  };
+
+  const handleTeam1ScoreChange = (value: string) => {
+    setTeam1Score(value);
+    autoSaveResult(value, team2Score);
+  };
+
+  const handleTeam2ScoreChange = (value: string) => {
+    setTeam2Score(value);
+    autoSaveResult(team1Score, value);
   };
 
   const handleClearResult = () => {
@@ -31,8 +43,6 @@ const MatchResultInput: React.FC<MatchResultInputProps> = ({ match, onResultUpda
   };
 
   const isCompleted = match.result?.completed || false;
-  const hasValidScores = team1Score !== '' && team2Score !== '' && 
-                        !isNaN(parseInt(team1Score)) && !isNaN(parseInt(team2Score));
 
   return (
     <Card className="mb-4">
@@ -74,7 +84,7 @@ const MatchResultInput: React.FC<MatchResultInputProps> = ({ match, onResultUpda
                 type="number"
                 placeholder="Score"
                 value={team1Score}
-                onChange={(e) => setTeam1Score(e.target.value)}
+                onChange={(e) => handleTeam1ScoreChange(e.target.value)}
                 className="text-center"
                 min="0"
               />
@@ -84,34 +94,27 @@ const MatchResultInput: React.FC<MatchResultInputProps> = ({ match, onResultUpda
                 type="number"
                 placeholder="Score"
                 value={team2Score}
-                onChange={(e) => setTeam2Score(e.target.value)}
+                onChange={(e) => handleTeam2ScoreChange(e.target.value)}
                 className="text-center"
                 min="0"
               />
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Button
-              onClick={handleSaveResult}
-              disabled={!hasValidScores}
-              size="sm"
-              className="flex-1"
-            >
-              <Check className="h-4 w-4 mr-1" />
-              Save Result
-            </Button>
-            {isCompleted && (
+          {/* Clear Button */}
+          {isCompleted && (
+            <div className="flex justify-center">
               <Button
                 onClick={handleClearResult}
                 variant="outline"
                 size="sm"
+                className="flex items-center gap-2"
               >
                 <X className="h-4 w-4" />
+                Clear Result
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
