@@ -9,8 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { User, Session } from '@supabase/supabase-js';
-import { Mail, UserX, Trash2, MessageSquare, Calendar, Users } from 'lucide-react';
-import EventForm from '@/components/EventForm';
+import { Mail, UserX, Trash2, MessageSquare, Calendar, Users, Plus } from 'lucide-react';
+import EventFormModal from '@/components/EventFormModal';
 import EventManagement from '@/components/EventManagement';
 import ContactManagement from '@/components/ContactManagement';
 
@@ -35,6 +35,7 @@ const Admin = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEventModal, setShowEventModal] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -283,15 +284,26 @@ const Admin = () => {
           <TabsContent value="events" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Event Management</CardTitle>
-                <CardDescription>
-                  Create and manage pickleball events and tournaments
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Event Management</CardTitle>
+                    <CardDescription>
+                      Create and manage pickleball events and tournaments
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setShowEventModal(true)} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Event
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent>
-                <EventForm onEventCreated={loadAdminData} />
-              </CardContent>
             </Card>
+
+            <EventFormModal 
+              open={showEventModal} 
+              onOpenChange={setShowEventModal}
+              onEventCreated={loadAdminData}
+            />
 
             <EventManagement onEventUpdated={loadAdminData} />
           </TabsContent>
