@@ -194,24 +194,23 @@ const EventFormModal = ({ open, onOpenChange, onEventCreated }: EventFormModalPr
                 />
               </div>
               <div>
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="endDate">End Date</Label>
                 <Input
-                  id="location"
-                  placeholder="e.g., Downtown Community Center"
-                  value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="eventLink">Event Link</Label>
+              <Label htmlFor="location">Location</Label>
               <Input
-                id="eventLink"
-                type="url"
-                placeholder="https://example.com/event-registration"
-                value={formData.eventLink}
-                onChange={(e) => setFormData(prev => ({ ...prev, eventLink: e.target.value }))}
+                id="location"
+                placeholder="e.g., Downtown Community Center"
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
               />
             </div>
 
@@ -252,11 +251,25 @@ const EventFormModal = ({ open, onOpenChange, onEventCreated }: EventFormModalPr
 
           {/* Image Upload */}
           <div className="space-y-4 pt-4 border-t">
-            <h3 className="text-lg font-medium">Event Thumbnail</h3>
-            <ImageUpload
-              currentImageUrl={formData.thumbnail}
-              onImageChange={handleImageChange}
-            />
+            <h3 className="text-lg font-medium">Event Thumbnail & Link</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="eventLink">Event Link</Label>
+                <Input
+                  id="eventLink"
+                  type="url"
+                  placeholder="https://example.com/event-registration"
+                  value={formData.eventLink}
+                  onChange={(e) => setFormData(prev => ({ ...prev, eventLink: e.target.value }))}
+                />
+              </div>
+              <div>
+                <ImageUpload
+                  currentImageUrl={formData.thumbnail}
+                  onImageChange={handleImageChange}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Optional Fields */}
@@ -282,16 +295,6 @@ const EventFormModal = ({ open, onOpenChange, onEventCreated }: EventFormModalPr
                   onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
                 />
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
