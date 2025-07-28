@@ -11,7 +11,7 @@ import ScheduleHistory from "./pages/ScheduleHistory";
 import MyAccount from "./pages/MyAccount";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
-
+import About from "./pages/About";
 import Tournament from "./pages/Tournament";
 import NotFound from "./pages/NotFound";
 
@@ -31,7 +31,7 @@ const App = () => (
             <Route path="/account" element={<MyAccount />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
-            
+            <Route path="/about" element={<About />} />
             <Route path="/tournament" element={<Tournament />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
