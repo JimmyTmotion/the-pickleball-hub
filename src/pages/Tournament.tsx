@@ -31,6 +31,8 @@ const Tournament = () => {
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [editingCompletedMatch, setEditingCompletedMatch] = useState<number | null>(null);
   const [editingScores, setEditingScores] = useState<number | null>(null);
+  const [isAlarmActive, setIsAlarmActive] = useState(false);
+  const [audioRef] = useState(new Audio('/siren.mp3'));
 
   useEffect(() => {
     if (!tournamentData) {
@@ -51,10 +53,23 @@ const Tournament = () => {
   const isCurrentRoundCompleted = currentRoundMatches.every(match => match.result?.completed);
 
   const handleTimerComplete = () => {
-    setShowResults(true);
+    setIsAlarmActive(true);
+    audioRef.loop = true;
+    audioRef.play().catch(console.error);
     toast({
       title: "Time's Up!",
-      description: "Round timer has finished. Enter the results for all matches.",
+      description: "Round timer has finished. Confirm to enter results.",
+    });
+  };
+
+  const handleConfirmRoundComplete = () => {
+    setIsAlarmActive(false);
+    audioRef.pause();
+    audioRef.currentTime = 0;
+    setShowResults(true);
+    toast({
+      title: "Round Confirmed!",
+      description: "Enter the results for all matches in this round.",
     });
   };
 
@@ -242,7 +257,24 @@ const Tournament = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-white">
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-white ${isAlarmActive ? 'animate-red-flash' : ''}`}>
+      {/* Alarm Confirmation Overlay */}
+      {isAlarmActive && (
+        <div className="fixed inset-0 bg-red-500/80 flex items-center justify-center z-50">
+          <AnimatedSection animation="scale-in" className="bg-white p-8 rounded-lg shadow-2xl text-center max-w-md mx-4">
+            <div className="text-red-600 text-6xl mb-4">⏰</div>
+            <h2 className="text-2xl font-bold text-red-700 mb-4">TIME'S UP!</h2>
+            <p className="text-gray-700 mb-6">Round {currentRound} has finished. Please confirm to enter results.</p>
+            <Button 
+              onClick={handleConfirmRoundComplete}
+              size="lg"
+              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3"
+            >
+              Confirm & Enter Results
+            </Button>
+          </AnimatedSection>
+        </div>
+      )}
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <AnimatedSection animation="fade-up" className="flex items-center justify-between mb-8">
