@@ -30,6 +30,7 @@ const Tournament = () => {
   const [tournamentComplete, setTournamentComplete] = useState(false);
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [editingCompletedMatch, setEditingCompletedMatch] = useState<number | null>(null);
+  const [editingScores, setEditingScores] = useState<number | null>(null);
 
   useEffect(() => {
     if (!tournamentData) {
@@ -81,14 +82,37 @@ const Tournament = () => {
 
   const handleResultChange = (matchId: number, field: 'team1Score' | 'team2Score', value: string) => {
     const score = parseInt(value) || 0;
-    setRoundResults(prev => ({
-      ...prev,
-      [matchId]: {
-        ...prev[matchId],
-        [field]: score,
-        completed: false
-      }
-    }));
+    
+    // If editing a completed match, update it directly in the schedule
+    if (editingScores === matchId) {
+      const updatedMatches = schedule.matches.map(match => {
+        if (match.id === matchId) {
+          return {
+            ...match,
+            result: {
+              ...match.result!,
+              [field]: score
+            }
+          };
+        }
+        return match;
+      });
+      
+      setSchedule({
+        ...schedule,
+        matches: updatedMatches
+      });
+    } else {
+      // Otherwise, update the temporary results for new entries
+      setRoundResults(prev => ({
+        ...prev,
+        [matchId]: {
+          ...prev[matchId],
+          [field]: score,
+          completed: false
+        }
+      }));
+    }
   };
 
   const handleSaveResults = () => {
@@ -159,6 +183,7 @@ const Tournament = () => {
       setRoundResults({});
       setEditingMatch(null);
       setEditingCompletedMatch(null);
+      setEditingScores(null);
       toast({
         title: "Round Changed",
         description: `Moved to Round ${currentRound - 1}`,
@@ -173,6 +198,7 @@ const Tournament = () => {
       setRoundResults({});
       setEditingMatch(null);
       setEditingCompletedMatch(null);
+      setEditingScores(null);
       toast({
         title: "Round Changed",
         description: `Moved to Round ${currentRound + 1}`,
@@ -273,6 +299,7 @@ const Tournament = () => {
               onTimerStart={handleTimerStart}
               onTimerStop={handleTimerStop}
               onTimerReset={handleTimerReset}
+              onCompleteRound={handleTimerStop}
               currentRound={currentRound}
             />
           </AnimatedSection>
@@ -286,25 +313,33 @@ const Tournament = () => {
                 <CardTitle className="flex items-center justify-between">
                   <Badge variant="outline" className="mb-2">Court {match.court}</Badge>
                   <div className="flex gap-1">
-                    {/* Edit button for active rounds */}
+                    {/* Single edit button that handles both cases */}
                     {!showResults && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setEditingMatch(editingMatch === match.id ? null : match.id)}
+                        onClick={() => {
+                          if (isCurrentRoundCompleted) {
+                            setEditingCompletedMatch(editingCompletedMatch === match.id ? null : match.id);
+                          } else {
+                            setEditingMatch(editingMatch === match.id ? null : match.id);
+                          }
+                        }}
                         className="h-8 w-8 p-0"
+                        title={isCurrentRoundCompleted ? "Edit teams" : "Edit teams"}
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
                     )}
-                    {/* Edit button for completed rounds */}
-                    {isCurrentRoundCompleted && !showResults && (
+                    
+                    {/* Score edit button for completed matches */}
+                    {match.result?.completed && !showResults && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setEditingCompletedMatch(editingCompletedMatch === match.id ? null : match.id)}
+                        onClick={() => setEditingScores(editingScores === match.id ? null : match.id)}
                         className="h-8 w-8 p-0"
-                        title="Edit teams for completed round"
+                        title="Edit scores"
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
@@ -313,7 +348,7 @@ const Tournament = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {(editingMatch === match.id && !showResults) || (editingCompletedMatch === match.id && isCurrentRoundCompleted && !showResults) ? (
+                {(editingMatch === match.id && !isCurrentRoundCompleted) || (editingCompletedMatch === match.id && isCurrentRoundCompleted) ? (
                   <PlayerSwapper
                     players={match.players}
                     onSwap={(fromIndex, toIndex) => handlePlayerSwap(match.id, fromIndex, toIndex)}
@@ -341,10 +376,26 @@ const Tournament = () => {
                           />
                         </div>
                       )}
-                      {/* Show saved results for completed matches */}
+                      {/* Show and edit saved results for completed matches */}
                       {match.result?.completed && !showResults && (
-                        <div className="mt-2 text-lg font-bold text-blue-600">
-                          Score: {match.result.team1Score}
+                        <div className="mt-2">
+                          {editingScores === match.id ? (
+                            <div>
+                              <Label htmlFor={`edit-team1-${match.id}`} className="text-sm">Score:</Label>
+                              <Input
+                                id={`edit-team1-${match.id}`}
+                                type="number"
+                                min="0"
+                                className="mt-1"
+                                onChange={(e) => handleResultChange(match.id, 'team1Score', e.target.value)}
+                                value={match.result.team1Score}
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-lg font-bold text-blue-600">
+                              Score: {match.result.team1Score}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -371,13 +422,48 @@ const Tournament = () => {
                           />
                         </div>
                       )}
-                      {/* Show saved results for completed matches */}
+                      {/* Show and edit saved results for completed matches */}
                       {match.result?.completed && !showResults && (
-                        <div className="mt-2 text-lg font-bold text-orange-600">
-                          Score: {match.result.team2Score}
+                        <div className="mt-2">
+                          {editingScores === match.id ? (
+                            <div>
+                              <Label htmlFor={`edit-team2-${match.id}`} className="text-sm">Score:</Label>
+                              <Input
+                                id={`edit-team2-${match.id}`}
+                                type="number"
+                                min="0"
+                                className="mt-1"
+                                onChange={(e) => handleResultChange(match.id, 'team2Score', e.target.value)}
+                                value={match.result.team2Score}
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-lg font-bold text-orange-600">
+                              Score: {match.result.team2Score}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
+                    
+                    {/* Save scores button when editing completed match scores */}
+                    {editingScores === match.id && (
+                      <div className="text-center">
+                        <Button 
+                          onClick={() => {
+                            setEditingScores(null);
+                            toast({
+                              title: "Scores Updated",
+                              description: "Match scores have been successfully updated.",
+                            });
+                          }}
+                          size="sm"
+                          className="mt-2"
+                        >
+                          Save Scores
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

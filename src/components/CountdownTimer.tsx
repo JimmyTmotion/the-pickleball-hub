@@ -10,6 +10,7 @@ interface CountdownTimerProps {
   onTimerStart: () => void;
   onTimerStop: () => void;
   onTimerReset: () => void;
+  onCompleteRound: () => void;
   currentRound: number;
 }
 
@@ -18,6 +19,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   onTimerStart,
   onTimerStop,
   onTimerReset,
+  onCompleteRound,
   currentRound
 }) => {
   const [initialMinutes, setInitialMinutes] = useState(9);
@@ -159,15 +161,25 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
           
           <div className="flex justify-center gap-4">
             {!isRunning ? (
-              <Button 
-                onClick={handleStart} 
-                size="lg" 
-                className="flex items-center gap-2"
-                disabled={timeLeft === 0}
-              >
-                <Play className="h-5 w-5" />
-                Start Round
-              </Button>
+              <>
+                <Button 
+                  onClick={handleStart} 
+                  size="lg" 
+                  className="flex items-center gap-2"
+                  disabled={timeLeft === 0}
+                >
+                  <Play className="h-5 w-5" />
+                  Start Timer
+                </Button>
+                <Button 
+                  onClick={onCompleteRound} 
+                  size="lg" 
+                  variant="secondary" 
+                  className="flex items-center gap-2"
+                >
+                  Complete Round
+                </Button>
+              </>
             ) : (
               <Button 
                 onClick={handleStop} 
@@ -176,9 +188,10 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
                 className="flex items-center gap-2"
               >
                 <Pause className="h-5 w-5" />
-                Complete Round
+                Stop Timer
               </Button>
             )}
+            
             <Button 
               onClick={handleReset} 
               size="lg" 
