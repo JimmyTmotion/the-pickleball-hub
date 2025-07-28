@@ -90,22 +90,11 @@ const Index = () => {
             {/* Schedule Display */}
             <div className="xl:col-span-2 space-y-6">
             {schedule ? (
-              <>
-                {/* Regenerate Button */}
-                <div className="flex justify-end">
-                  <Button 
-                    variant="outline" 
-                    onClick={handleRegenerateSchedule}
-                    className="flex items-center gap-2"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    Regenerate Schedule
-                  </Button>
-                </div>
-
-                {/* Schedule Display */}
-                <ScheduleDisplay schedule={schedule} scheduleName={currentConfig?.playerNames?.join(', ') || 'Generated Schedule'} />
-              </>
+                <ScheduleDisplay 
+                  schedule={schedule} 
+                  scheduleName={currentConfig?.playerNames?.join(', ') || 'Generated Schedule'}
+                  onRegenerateSchedule={handleRegenerateSchedule}
+                />
             ) : (
               <div className="flex items-center justify-center h-64 bg-white rounded-lg border-2 border-dashed border-gray-200">
                 <div className="text-center">

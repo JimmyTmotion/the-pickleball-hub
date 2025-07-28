@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Calendar, Users, TrendingUp, UserX, ChevronDown, Play, Edit } from 'lucide-react';
+import { Calendar, Users, TrendingUp, UserX, ChevronDown, Play, Edit, RotateCcw } from 'lucide-react';
 import { Schedule, Player } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import ScheduleDisplayOptions from './ScheduleDisplayOptions';
@@ -16,9 +16,10 @@ import { toast } from '@/hooks/use-toast';
 interface ScheduleDisplayProps {
   schedule: Schedule;
   scheduleName?: string;
+  onRegenerateSchedule?: () => void;
 }
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName }) => {
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName, onRegenerateSchedule }) => {
   const [viewMode, setViewMode] = useState<'standard' | 'printable'>('standard');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
@@ -162,24 +163,40 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <ScheduleDisplayOptions
-          onViewChange={setViewMode}
-          onDownloadCSV={handleDownloadCSV}
-          currentView={viewMode}
-        />
-        <Button onClick={handleBeginTournament} className="flex items-center gap-2">
-          <Play className="h-4 w-4" />
-          Begin Tournament
-        </Button>
-      </div>
+      {/* Controls Panel */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <ScheduleDisplayOptions
+              onViewChange={setViewMode}
+              onDownloadCSV={handleDownloadCSV}
+              currentView={viewMode}
+            />
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={onRegenerateSchedule}
+                className="flex items-center gap-2"
+                disabled={!onRegenerateSchedule}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Regenerate Schedule
+              </Button>
+              <Button onClick={handleBeginTournament} className="flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                Begin Tournament
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Schedule Overview */}
       <Collapsible>
         <Card>
           <CollapsibleTrigger className="w-full">
             <CardHeader className="hover:bg-muted/50 transition-colors">
-              <CardTitle className="flex items-center justify-between text-2xl font-bold text-blue-700">
+              <CardTitle className="flex items-center justify-between text-xl font-bold text-blue-700">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
                   Match Schedule
