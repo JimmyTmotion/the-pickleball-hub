@@ -64,6 +64,23 @@ const ScheduleHistory: React.FC = () => {
     }
   };
 
+  const handlePlayerSwap = async (updatedSchedule: any) => {
+    if (selectedSchedule) {
+      // Update the selected schedule with the new player arrangement
+      const updatedSelected = {
+        ...selectedSchedule,
+        schedule: updatedSchedule
+      };
+      setSelectedSchedule(updatedSelected);
+      
+      // Also update the saved schedules array
+      const updatedSchedules = savedSchedules.map(s => 
+        s.id === selectedSchedule.id ? updatedSelected : s
+      );
+      setSavedSchedules(updatedSchedules);
+    }
+  };
+
   const handleDownload = (schedule: SavedSchedule) => {
     const csv = exportScheduleToCSV(schedule.schedule);
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -115,7 +132,10 @@ const ScheduleHistory: React.FC = () => {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent>
-                    <ScheduleDisplay schedule={selectedSchedule.schedule} />
+                    <ScheduleDisplay 
+                      schedule={selectedSchedule.schedule} 
+                      onPlayerSwap={handlePlayerSwap}
+                    />
                   </CardContent>
                 </CollapsibleContent>
               </Card>

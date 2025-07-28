@@ -17,9 +17,10 @@ interface ScheduleDisplayProps {
   schedule: Schedule;
   scheduleName?: string;
   onRegenerateSchedule?: () => void;
+  onPlayerSwap?: (updatedSchedule: Schedule) => void;
 }
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName, onRegenerateSchedule }) => {
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName, onRegenerateSchedule, onPlayerSwap }) => {
   const [viewMode, setViewMode] = useState<'standard' | 'printable'>('standard');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
@@ -65,6 +66,12 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
     };
 
     setCurrentSchedule(updatedSchedule);
+    
+    // Notify parent component about the change
+    if (onPlayerSwap) {
+      onPlayerSwap(updatedSchedule);
+    }
+    
     toast({
       title: "Players Swapped",
       description: "Match lineup has been updated successfully.",
