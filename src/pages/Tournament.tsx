@@ -12,10 +12,12 @@ import LeagueTable from '@/components/LeagueTable';
 import AnimatedSection from '@/components/AnimatedSection';
 import PlayerSwapper from '@/components/PlayerSwapper';
 import CountdownTimer from '@/components/CountdownTimer';
+import { updateSchedule } from '@/utils/scheduleStorage';
 
 interface TournamentState {
   schedule: Schedule;
   name: string;
+  scheduleId?: string; // Add optional scheduleId for saving changes
 }
 
 const Tournament = () => {
@@ -130,7 +132,7 @@ const Tournament = () => {
     }
   };
 
-  const handleSaveResults = () => {
+  const handleSaveResults = async () => {
     const updatedMatches = schedule.matches.map(match => {
       if (match.round === currentRound && roundResults[match.id]) {
         const result = roundResults[match.id];
@@ -154,6 +156,23 @@ const Tournament = () => {
     setRoundResults({});
     setShowResults(false);
 
+    // Save to database if scheduleId is available
+    if (tournamentData.scheduleId) {
+      try {
+        await updateSchedule(tournamentData.scheduleId, updatedSchedule);
+        toast({
+          title: "Results Saved!",
+          description: `Round ${currentRound} results have been saved to database.`,
+        });
+      } catch (error) {
+        toast({
+          title: "Save Error",
+          description: "Failed to save results to database, but local changes preserved.",
+          variant: "destructive",
+        });
+      }
+    }
+
     if (currentRound < totalRounds) {
       toast({
         title: "Results Saved!",
@@ -169,7 +188,7 @@ const Tournament = () => {
     }
   };
 
-  const handlePlayerSwap = (matchId: number, fromIndex: number, toIndex: number) => {
+  const handlePlayerSwap = async (matchId: number, fromIndex: number, toIndex: number) => {
     const updatedMatches = schedule.matches.map(match => {
       if (match.id === matchId) {
         const newPlayers = [...match.players];
@@ -192,6 +211,15 @@ const Tournament = () => {
       delete updated[matchId];
       return updated;
     });
+
+    // Save to database if scheduleId is available
+    if (tournamentData.scheduleId) {
+      try {
+        await updateSchedule(tournamentData.scheduleId, updatedSchedule);
+      } catch (error) {
+        console.error('Failed to save player swap:', error);
+      }
+    }
 
     toast({
       title: "Players Swapped",
@@ -490,12 +518,29 @@ const Tournament = () => {
                     {editingScores === match.id && (
                       <div className="text-center">
                         <Button 
-                          onClick={() => {
+                          onClick={async () => {
+                            // Save to database if scheduleId is available
+                            if (tournamentData.scheduleId) {
+                              try {
+                                await updateSchedule(tournamentData.scheduleId, schedule);
+                                toast({
+                                  title: "Scores Updated",
+                                  description: "Match scores have been saved to database.",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Save Error",
+                                  description: "Failed to save scores to database, but local changes preserved.",
+                                  variant: "destructive",
+                                });
+                              }
+                            } else {
+                              toast({
+                                title: "Scores Updated",
+                                description: "Match scores have been updated locally.",
+                              });
+                            }
                             setEditingScores(null);
-                            toast({
-                              title: "Scores Updated",
-                              description: "Match scores have been successfully updated.",
-                            });
                           }}
                           size="sm"
                           className="mt-2"

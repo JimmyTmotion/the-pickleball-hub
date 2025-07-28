@@ -134,6 +134,7 @@ const ScheduleHistory: React.FC = () => {
                   <CardContent>
                     <ScheduleDisplay 
                       schedule={selectedSchedule.schedule} 
+                      scheduleId={selectedSchedule.id}
                       onPlayerSwap={handlePlayerSwap}
                     />
                   </CardContent>

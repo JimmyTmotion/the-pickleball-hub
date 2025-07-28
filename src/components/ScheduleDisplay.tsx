@@ -16,11 +16,12 @@ import { toast } from '@/hooks/use-toast';
 interface ScheduleDisplayProps {
   schedule: Schedule;
   scheduleName?: string;
+  scheduleId?: string; // Add scheduleId prop
   onRegenerateSchedule?: () => void;
   onPlayerSwap?: (updatedSchedule: Schedule) => void;
 }
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName, onRegenerateSchedule, onPlayerSwap }) => {
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName, scheduleId, onRegenerateSchedule, onPlayerSwap }) => {
   const [viewMode, setViewMode] = useState<'standard' | 'printable'>('standard');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
@@ -82,7 +83,8 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
     navigate('/tournament', {
       state: {
         schedule: currentSchedule,
-        name: scheduleName || 'Tournament'
+        name: scheduleName || 'Tournament',
+        scheduleId: scheduleId // Pass the scheduleId if available
       }
     });
   };

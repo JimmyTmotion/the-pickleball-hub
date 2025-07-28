@@ -219,6 +219,18 @@ export const updatePlayerNames = async (scheduleId: string, playerNames: Record<
   }
 };
 
+export const updateSchedule = async (scheduleId: string, schedule: Schedule): Promise<void> => {
+  // Save the updated schedule to the database
+  const { error: updateError } = await supabase
+    .from('schedules')
+    .update({ schedule: schedule as any })
+    .eq('id', scheduleId);
+
+  if (updateError) {
+    throw new Error(`Failed to update schedule: ${updateError.message}`);
+  }
+};
+
 export const clearAllSchedules = async (): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
