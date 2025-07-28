@@ -1,5 +1,4 @@
-import React, { ReactNode } from 'react';
-import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import React, { ReactNode, useEffect, useState } from 'react';
 
 interface AnimatedSectionProps {
   children: ReactNode;
@@ -14,13 +13,19 @@ const AnimatedSection = ({
   animation = 'fade-up',
   delay = 0 
 }: AnimatedSectionProps) => {
-  const { elementRef, isVisible } = useIntersectionObserver({
-    threshold: 0.1,
-    rootMargin: '0px 0px -100px 0px',
-  });
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Start animation after component mounts with specified delay
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [delay]);
 
   const getAnimationClasses = () => {
-    const baseClasses = 'transition-all duration-500 ease-out';
+    const baseClasses = 'transition-all duration-700 ease-out';
     
     if (!isVisible) {
       switch (animation) {
@@ -44,11 +49,7 @@ const AnimatedSection = ({
 
   return (
     <div 
-      ref={elementRef}
       className={`${getAnimationClasses()} ${className}`}
-      style={{ 
-        transitionDelay: `${delay}ms` 
-      }}
     >
       {children}
     </div>
