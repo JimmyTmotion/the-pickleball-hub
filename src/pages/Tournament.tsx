@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Play, Pause, RotateCcw, ChevronRight, Trophy, Edit } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Trophy, Edit, SkipForward, SkipBack } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import LeagueTable from '@/components/LeagueTable';
 import AnimatedSection from '@/components/AnimatedSection';
 import PlayerSwapper from '@/components/PlayerSwapper';
+import CountdownTimer from '@/components/CountdownTimer';
 
 interface TournamentState {
   schedule: Schedule;
@@ -23,8 +24,6 @@ const Tournament = () => {
   const tournamentData = location.state as TournamentState;
 
   const [currentRound, setCurrentRound] = useState(1);
-  const [timerSeconds, setTimerSeconds] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [schedule, setSchedule] = useState<Schedule>(tournamentData?.schedule);
   const [showResults, setShowResults] = useState(false);
   const [roundResults, setRoundResults] = useState<Record<number, MatchResult>>({});
@@ -38,20 +37,6 @@ const Tournament = () => {
     }
   }, [tournamentData, navigate]);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isTimerRunning) {
-      interval = setInterval(() => {
-        setTimerSeconds(seconds => seconds + 1);
-      }, 1000);
-    } else if (!isTimerRunning && timerSeconds !== 0) {
-      if (interval) clearInterval(interval);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isTimerRunning, timerSeconds]);
-
   if (!tournamentData) {
     return null;
   }
@@ -60,22 +45,22 @@ const Tournament = () => {
   const currentRoundMatches = schedule.matches.filter(m => m.round === currentRound);
   const sittingOut = schedule.roundSittingOut[currentRound] || [];
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const handleTimerComplete = () => {
+    setShowResults(true);
+    toast({
+      title: "Time's Up!",
+      description: "Round timer has finished. Enter the results for all matches.",
+    });
   };
 
-  const handleStartTimer = () => {
-    setIsTimerRunning(true);
+  const handleTimerStart = () => {
     toast({
       title: "Round Started!",
       description: `Round ${currentRound} timer has begun.`,
     });
   };
 
-  const handleStopTimer = () => {
-    setIsTimerRunning(false);
+  const handleTimerStop = () => {
     setShowResults(true);
     toast({
       title: "Round Complete!",
@@ -83,9 +68,11 @@ const Tournament = () => {
     });
   };
 
-  const handleResetTimer = () => {
-    setIsTimerRunning(false);
-    setTimerSeconds(0);
+  const handleTimerReset = () => {
+    toast({
+      title: "Timer Reset",
+      description: "Round timer has been reset.",
+    });
   };
 
   const handleResultChange = (matchId: number, field: 'team1Score' | 'team2Score', value: string) => {
@@ -123,13 +110,13 @@ const Tournament = () => {
     setSchedule(updatedSchedule);
     setRoundResults({});
     setShowResults(false);
-    setTimerSeconds(0);
 
     if (currentRound < totalRounds) {
       toast({
         title: "Results Saved!",
         description: `Round ${currentRound} results have been recorded. Ready for round ${currentRound + 1}.`,
       });
+      setCurrentRound(currentRound + 1);
     } else {
       setTournamentComplete(true);
       toast({
@@ -161,9 +148,27 @@ const Tournament = () => {
     });
   };
 
+  const handlePreviousRound = () => {
+    if (currentRound > 1) {
+      setCurrentRound(currentRound - 1);
+      setShowResults(false);
+      setRoundResults({});
+      toast({
+        title: "Round Changed",
+        description: `Moved to Round ${currentRound - 1}`,
+      });
+    }
+  };
+
   const handleNextRound = () => {
     if (currentRound < totalRounds) {
       setCurrentRound(currentRound + 1);
+      setShowResults(false);
+      setRoundResults({});
+      toast({
+        title: "Round Changed",
+        description: `Moved to Round ${currentRound + 1}`,
+      });
     }
   };
 
@@ -217,46 +222,51 @@ const Tournament = () => {
               <p className="text-gray-600">Round {currentRound} of {totalRounds}</p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="text-lg px-4 py-2">
-              {formatTime(timerSeconds)}
-            </Badge>
-          </div>
         </AnimatedSection>
 
-        {/* Timer Controls */}
-        {!showResults && (
-          <AnimatedSection animation="scale-in" delay={100}>
-            <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="text-center">Round {currentRound} Timer</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center space-y-4">
-                <div className="text-6xl font-bold text-primary">
-                  {formatTime(timerSeconds)}
+        {/* Round Navigation */}
+        <AnimatedSection animation="fade-up" delay={50}>
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={handlePreviousRound}
+                  disabled={currentRound === 1}
+                  className="flex items-center gap-2"
+                >
+                  <SkipBack className="h-4 w-4" />
+                  Previous Round
+                </Button>
+                
+                <div className="flex items-center gap-2 text-lg font-semibold">
+                  Round {currentRound} of {totalRounds}
                 </div>
-                <div className="flex justify-center gap-4">
-                  {!isTimerRunning ? (
-                    <Button onClick={handleStartTimer} size="lg" className="flex items-center gap-2">
-                      <Play className="h-5 w-5" />
-                      Start Round
-                    </Button>
-                  ) : (
-                    <Button onClick={handleStopTimer} size="lg" variant="destructive" className="flex items-center gap-2">
-                      <Pause className="h-5 w-5" />
-                      Complete Round
-                    </Button>
-                  )}
-                  <Button onClick={handleResetTimer} size="lg" variant="outline" className="flex items-center gap-2">
-                    <RotateCcw className="h-5 w-5" />
-                    Reset
-                  </Button>
-                </div>
+                
+                <Button
+                  variant="outline"
+                  onClick={handleNextRound}
+                  disabled={currentRound === totalRounds}
+                  className="flex items-center gap-2"
+                >
+                  Next Round
+                  <SkipForward className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
-            </Card>
+          </Card>
+        </AnimatedSection>
+
+        {/* Timer */}
+        {!showResults && (
+          <AnimatedSection animation="scale-in" delay={100} className="mb-8">
+            <CountdownTimer
+              onTimerComplete={handleTimerComplete}
+              onTimerStart={handleTimerStart}
+              onTimerStop={handleTimerStop}
+              onTimerReset={handleTimerReset}
+              currentRound={currentRound}
+            />
           </AnimatedSection>
         )}
 
@@ -343,14 +353,14 @@ const Tournament = () => {
         {sittingOut.length > 0 && (
           <AnimatedSection animation="fade-in" delay={200}>
             <Card className="mb-8">
-            <CardContent className="p-4">
-              <div className="text-center">
-                <span className="font-semibold text-gray-700">Sitting Out This Round: </span>
-                <span className="text-gray-600">
-                  {sittingOut.map(p => p.name).join(', ')}
-                </span>
-              </div>
-            </CardContent>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <span className="font-semibold text-gray-700">Sitting Out This Round: </span>
+                  <span className="text-gray-600">
+                    {sittingOut.map(p => p.name).join(', ')}
+                  </span>
+                </div>
+              </CardContent>
             </Card>
           </AnimatedSection>
         )}
@@ -358,40 +368,48 @@ const Tournament = () => {
         {/* Results Actions */}
         {showResults && (
           <AnimatedSection animation="scale-in" delay={250}>
-            <Card>
-            <CardContent className="p-6">
-              <div className="text-center space-y-4">
-                <h3 className="text-xl font-semibold">Enter Match Results</h3>
-                <div className="flex justify-center gap-4">
-                  <Button 
-                    onClick={handleSaveResults} 
-                    disabled={!allResultsEntered}
-                    size="lg"
-                    className="flex items-center gap-2"
-                  >
-                    {currentRound < totalRounds ? (
-                      <>
-                        Save & Next Round
-                        <ChevronRight className="h-5 w-5" />
-                      </>
-                    ) : (
-                      <>
-                        Complete Tournament
-                        <Trophy className="h-5 w-5" />
-                      </>
-                    )}
-                  </Button>
+            <Card className="mb-8">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <h3 className="text-xl font-semibold">Enter Match Results</h3>
+                  <div className="flex justify-center gap-4">
+                    <Button 
+                      onClick={handleSaveResults} 
+                      disabled={!allResultsEntered}
+                      size="lg"
+                      className="flex items-center gap-2"
+                    >
+                      {currentRound < totalRounds ? (
+                        <>
+                          Save & Next Round
+                          <ChevronRight className="h-5 w-5" />
+                        </>
+                      ) : (
+                        <>
+                          Complete Tournament
+                          <Trophy className="h-5 w-5" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {!allResultsEntered && (
+                    <p className="text-sm text-gray-600">
+                      Please enter scores for all matches before proceeding.
+                    </p>
+                  )}
                 </div>
-                {!allResultsEntered && (
-                  <p className="text-sm text-gray-600">
-                    Please enter scores for all matches before proceeding.
-                  </p>
-                )}
-              </div>
-            </CardContent>
+              </CardContent>
             </Card>
           </AnimatedSection>
         )}
+
+        {/* Live League Table */}
+        <AnimatedSection animation="fade-up" delay={300} className="mb-8">
+          <LeagueTable 
+            schedule={schedule} 
+            title="Current Tournament Standings" 
+          />
+        </AnimatedSection>
       </div>
     </div>
   );
