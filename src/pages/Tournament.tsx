@@ -29,6 +29,7 @@ const Tournament = () => {
   const [roundResults, setRoundResults] = useState<Record<number, MatchResult>>({});
   const [tournamentComplete, setTournamentComplete] = useState(false);
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
+  const [editingCompletedMatch, setEditingCompletedMatch] = useState<number | null>(null);
 
   useEffect(() => {
     if (!tournamentData) {
@@ -44,6 +45,9 @@ const Tournament = () => {
   const totalRounds = Math.max(...schedule.matches.map(m => m.round));
   const currentRoundMatches = schedule.matches.filter(m => m.round === currentRound);
   const sittingOut = schedule.roundSittingOut[currentRound] || [];
+  
+  // Check if current round is completed (all matches have results)
+  const isCurrentRoundCompleted = currentRoundMatches.every(match => match.result?.completed);
 
   const handleTimerComplete = () => {
     setShowResults(true);
@@ -153,6 +157,8 @@ const Tournament = () => {
       setCurrentRound(currentRound - 1);
       setShowResults(false);
       setRoundResults({});
+      setEditingMatch(null);
+      setEditingCompletedMatch(null);
       toast({
         title: "Round Changed",
         description: `Moved to Round ${currentRound - 1}`,
@@ -165,6 +171,8 @@ const Tournament = () => {
       setCurrentRound(currentRound + 1);
       setShowResults(false);
       setRoundResults({});
+      setEditingMatch(null);
+      setEditingCompletedMatch(null);
       toast({
         title: "Round Changed",
         description: `Moved to Round ${currentRound + 1}`,
@@ -277,19 +285,35 @@ const Tournament = () => {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <Badge variant="outline" className="mb-2">Court {match.court}</Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditingMatch(editingMatch === match.id ? null : match.id)}
-                    className="h-8 w-8 p-0"
-                    disabled={showResults}
-                  >
-                    <Edit className="h-3 w-3" />
-                  </Button>
+                  <div className="flex gap-1">
+                    {/* Edit button for active rounds */}
+                    {!showResults && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingMatch(editingMatch === match.id ? null : match.id)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    )}
+                    {/* Edit button for completed rounds */}
+                    {isCurrentRoundCompleted && !showResults && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingCompletedMatch(editingCompletedMatch === match.id ? null : match.id)}
+                        className="h-8 w-8 p-0"
+                        title="Edit teams for completed round"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {editingMatch === match.id && !showResults ? (
+                {(editingMatch === match.id && !showResults) || (editingCompletedMatch === match.id && isCurrentRoundCompleted && !showResults) ? (
                   <PlayerSwapper
                     players={match.players}
                     onSwap={(fromIndex, toIndex) => handlePlayerSwap(match.id, fromIndex, toIndex)}
@@ -317,6 +341,12 @@ const Tournament = () => {
                           />
                         </div>
                       )}
+                      {/* Show saved results for completed matches */}
+                      {match.result?.completed && !showResults && (
+                        <div className="mt-2 text-lg font-bold text-blue-600">
+                          Score: {match.result.team1Score}
+                        </div>
+                      )}
                     </div>
 
                     <div className="text-center text-xl font-bold text-gray-600">VS</div>
@@ -339,6 +369,12 @@ const Tournament = () => {
                             onChange={(e) => handleResultChange(match.id, 'team2Score', e.target.value)}
                             value={roundResults[match.id]?.team2Score || ''}
                           />
+                        </div>
+                      )}
+                      {/* Show saved results for completed matches */}
+                      {match.result?.completed && !showResults && (
+                        <div className="mt-2 text-lg font-bold text-orange-600">
+                          Score: {match.result.team2Score}
                         </div>
                       )}
                     </div>
