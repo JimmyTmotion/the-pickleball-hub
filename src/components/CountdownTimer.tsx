@@ -21,13 +21,14 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   currentRound
 }) => {
   const [initialMinutes, setInitialMinutes] = useState(9);
+  const [initialSeconds, setInitialSeconds] = useState(0);
   const [timeLeft, setTimeLeft] = useState(9 * 60); // 9 minutes in seconds
   const [isRunning, setIsRunning] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    setTimeLeft(initialMinutes * 60);
-  }, [initialMinutes]);
+    setTimeLeft(initialMinutes * 60 + initialSeconds);
+  }, [initialMinutes, initialSeconds]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -70,15 +71,24 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
 
   const handleReset = () => {
     setIsRunning(false);
-    setTimeLeft(initialMinutes * 60);
+    setTimeLeft(initialMinutes * 60 + initialSeconds);
     onTimerReset();
   };
 
-  const handleTimeChange = (minutes: number) => {
-    if (minutes > 0 && minutes <= 120) {
+  const handleMinutesChange = (minutes: number) => {
+    if (minutes >= 0 && minutes <= 120) {
       setInitialMinutes(minutes);
       if (!isRunning) {
-        setTimeLeft(minutes * 60);
+        setTimeLeft(minutes * 60 + initialSeconds);
+      }
+    }
+  };
+
+  const handleSecondsChange = (seconds: number) => {
+    if (seconds >= 0 && seconds <= 59) {
+      setInitialSeconds(seconds);
+      if (!isRunning) {
+        setTimeLeft(initialMinutes * 60 + seconds);
       }
     }
   };
@@ -107,21 +117,32 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
         <div className="text-center space-y-4">
           {showSettings && (
             <div className="mb-4 p-4 bg-muted rounded-lg">
-              <Label htmlFor="timer-minutes" className="text-sm font-medium">
-                Set Timer (minutes):
+              <Label className="text-sm font-medium">
+                Set Timer:
               </Label>
               <div className="flex items-center gap-2 mt-2">
                 <Input
                   id="timer-minutes"
                   type="number"
-                  min="1"
+                  min="0"
                   max="120"
                   value={initialMinutes}
-                  onChange={(e) => handleTimeChange(parseInt(e.target.value) || 1)}
+                  onChange={(e) => handleMinutesChange(parseInt(e.target.value) || 0)}
                   className="w-20"
                   disabled={isRunning}
                 />
-                <span className="text-sm text-muted-foreground">minutes</span>
+                <span className="text-sm text-muted-foreground">min</span>
+                <Input
+                  id="timer-seconds"
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={initialSeconds}
+                  onChange={(e) => handleSecondsChange(parseInt(e.target.value) || 0)}
+                  className="w-20"
+                  disabled={isRunning}
+                />
+                <span className="text-sm text-muted-foreground">sec</span>
               </div>
             </div>
           )}
