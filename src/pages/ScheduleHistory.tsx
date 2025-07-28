@@ -186,8 +186,108 @@ const ScheduleHistory: React.FC = () => {
                   </CardHeader>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <CardContent>
+                  <CardContent className="space-y-6">
                     <LeagueTable schedule={selectedSchedule.schedule} title={`${selectedSchedule.name} - League Table`} />
+                    
+                    {/* Awards Section */}
+                    {(() => {
+                      const statsMap = new Map();
+                      
+                      // Initialize stats for all players
+                      selectedSchedule.schedule.playerStats.forEach(player => {
+                        statsMap.set(player.playerId, {
+                          playerId: player.playerId,
+                          playerName: player.playerName,
+                          pointsFor: 0,
+                          pointsAgainst: 0,
+                          pointsDifference: 0
+                        });
+                      });
+
+                      // Calculate stats from completed matches
+                      selectedSchedule.schedule.matches.forEach(match => {
+                        if (!match.result?.completed) return;
+
+                        const team1 = [match.players[0], match.players[1]];
+                        const team2 = [match.players[2], match.players[3]];
+                        const team1Score = match.result.team1Score;
+                        const team2Score = match.result.team2Score;
+
+                        team1.forEach(player => {
+                          const stats = statsMap.get(player.id);
+                          if (stats) {
+                            stats.pointsFor += team1Score;
+                            stats.pointsAgainst += team2Score;
+                          }
+                        });
+
+                        team2.forEach(player => {
+                          const stats = statsMap.get(player.id);
+                          if (stats) {
+                            stats.pointsFor += team2Score;
+                            stats.pointsAgainst += team1Score;
+                          }
+                        });
+                      });
+
+                      const playerStats = Array.from(statsMap.values()).map(stats => ({
+                        ...stats,
+                        pointsDifference: stats.pointsFor - stats.pointsAgainst
+                      }));
+
+                      const completedMatches = selectedSchedule.schedule.matches.filter(m => m.result?.completed).length;
+                      
+                      if (completedMatches === 0) return null;
+
+                      const topScorer = playerStats.reduce((max, player) => 
+                        player.pointsFor > max.pointsFor ? player : max
+                      );
+                      
+                      const bestDefensive = playerStats.reduce((min, player) => 
+                        player.pointsAgainst < min.pointsAgainst ? player : min
+                      );
+                      
+                      const mostConsistent = playerStats.reduce((max, player) => 
+                        player.pointsDifference > max.pointsDifference ? player : max
+                      );
+
+                      return (
+                        <div className="border-t pt-6">
+                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Trophy className="h-5 w-5 text-yellow-500" />
+                            Awards
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
+                              <CardContent className="p-4 text-center">
+                                <div className="text-2xl mb-2">🏆</div>
+                                <h4 className="font-semibold text-yellow-700">Top Point Scorer</h4>
+                                <p className="text-lg font-bold">{topScorer.playerName}</p>
+                                <p className="text-sm text-muted-foreground">{topScorer.pointsFor} points</p>
+                              </CardContent>
+                            </Card>
+                            
+                            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                              <CardContent className="p-4 text-center">
+                                <div className="text-2xl mb-2">🛡️</div>
+                                <h4 className="font-semibold text-blue-700">Best Defensive Performance</h4>
+                                <p className="text-lg font-bold">{bestDefensive.playerName}</p>
+                                <p className="text-sm text-muted-foreground">{bestDefensive.pointsAgainst} points conceded</p>
+                              </CardContent>
+                            </Card>
+                            
+                            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                              <CardContent className="p-4 text-center">
+                                <div className="text-2xl mb-2">📈</div>
+                                <h4 className="font-semibold text-green-700">Consistent Player</h4>
+                                <p className="text-lg font-bold">{mostConsistent.playerName}</p>
+                                <p className="text-sm text-muted-foreground">+{mostConsistent.pointsDifference} difference</p>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </CardContent>
                 </CollapsibleContent>
               </Card>
