@@ -90,14 +90,6 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
   };
 
   if (viewMode === 'printable') {
-    // Group rounds into pages of 5 minimum
-    const roundEntries = Object.entries(matchesByRound);
-    const pageGroups: Array<Array<[string, typeof matches]>> = [];
-    
-    for (let i = 0; i < roundEntries.length; i += 5) {
-      pageGroups.push(roundEntries.slice(i, i + 5));
-    }
-
     return (
       <div className="space-y-6">
         <ScheduleDisplayOptions
@@ -106,97 +98,87 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
           currentView={viewMode}
         />
         
-        <div className="print:block hidden">
-          {pageGroups.map((pageRounds, pageIndex) => (
-            <div key={pageIndex} className={pageIndex > 0 ? "print:break-before-page" : ""}>
-              {/* Header on each page */}
-              <div className="text-center mb-6 print:mb-4">
-                <h1 className="text-2xl font-bold text-gray-900 print:text-black">
-                  Pickleball Schedule
-                </h1>
-                {scheduleName && (
-                  <p className="text-lg text-gray-700 print:text-black mt-1">{scheduleName}</p>
-                )}
-                {pageGroups.length > 1 && (
-                  <p className="text-sm text-gray-600 print:text-black mt-1">
-                    Page {pageIndex + 1} of {pageGroups.length}
-                  </p>
-                )}
-              </div>
+        <div className="print:block">
+          <div className="text-center mb-6 print:mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 print:text-black">
+              Pickleball Schedule
+            </h1>
+            {scheduleName && (
+              <p className="text-lg text-gray-700 print:text-black mt-1">{scheduleName}</p>
+            )}
+          </div>
 
-              <div className="space-y-6 print:space-y-4">
-                {pageRounds.map(([round, roundMatches]) => (
-                  <div key={round} className="break-inside-avoid">
-                    <div className="mb-3 print:mb-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <h2 className="text-xl font-bold text-gray-900 print:text-black">
-                          Round {round}
-                        </h2>
-                        {roundSittingOut[parseInt(round)] && roundSittingOut[parseInt(round)].length > 0 && (
-                          <div className="text-sm print:text-xs">
-                            <span className="font-semibold text-gray-700 print:text-black">Sitting Out: </span>
-                            <span className="text-gray-600 print:text-black">
-                              {roundSittingOut[parseInt(round)].map(p => p.name).join(', ')}
-                            </span>
-                          </div>
-                        )}
+          <div className="space-y-6 print:space-y-4">
+            {Object.entries(matchesByRound).map(([round, roundMatches]) => (
+              <div key={round} className="break-inside-avoid">
+                <div className="mb-3 print:mb-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-xl font-bold text-gray-900 print:text-black">
+                      Round {round}
+                    </h2>
+                    {roundSittingOut[parseInt(round)] && roundSittingOut[parseInt(round)].length > 0 && (
+                      <div className="text-sm print:text-xs">
+                        <span className="font-semibold text-gray-700 print:text-black">Sitting Out: </span>
+                        <span className="text-gray-600 print:text-black">
+                          {roundSittingOut[parseInt(round)].map(p => p.name).join(', ')}
+                        </span>
                       </div>
-                    </div>
-                    
-                    <div className="overflow-hidden border border-gray-300 rounded print:border-black">
-                      <table className="w-full text-sm print:text-xs">
-                        <thead>
-                          <tr className="border-b border-gray-300 print:border-black bg-gray-50 print:bg-white">
-                            <th className="p-2 text-left font-semibold">Court</th>
-                            <th className="p-2 text-left font-semibold">Team 1</th>
-                            <th className="p-2 text-center font-semibold">Score</th>
-                            <th className="p-2 text-left font-semibold">Team 2</th>
-                            <th className="p-2 text-center font-semibold">Score</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {roundMatches.map((match, index) => (
-                            <tr 
-                              key={match.id}
-                              className={`border-b border-gray-200 print:border-gray-400 ${
-                                index % 2 === 0 ? 'bg-white' : 'bg-gray-25 print:bg-white'
-                              }`}
-                            >
-                              <td className="p-2 font-medium text-center">
-                                {match.court}
-                              </td>
-                              <td className="p-2">
-                                <div className="space-y-1">
-                                  <div className="font-medium">{match.players[0]?.name}</div>
-                                  <div className="font-medium">{match.players[1]?.name}</div>
-                                </div>
-                              </td>
-                              <td className="p-2 text-center">
-                                <div className="inline-block border-2 border-gray-400 print:border-black w-12 h-8 print:w-10 print:h-6">
-                                  {/* Score box for Team 1 */}
-                                </div>
-                              </td>
-                              <td className="p-2">
-                                <div className="space-y-1">
-                                  <div className="font-medium">{match.players[2]?.name}</div>
-                                  <div className="font-medium">{match.players[3]?.name}</div>
-                                </div>
-                              </td>
-                              <td className="p-2 text-center">
-                                <div className="inline-block border-2 border-gray-400 print:border-black w-12 h-8 print:w-10 print:h-6">
-                                  {/* Score box for Team 2 */}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    )}
                   </div>
-                ))}
+                </div>
+                
+                <div className="overflow-hidden border border-gray-300 rounded print:border-black">
+                  <table className="w-full text-sm print:text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-300 print:border-black bg-gray-50 print:bg-white">
+                        <th className="p-2 text-left font-semibold">Court</th>
+                        <th className="p-2 text-left font-semibold">Team 1</th>
+                        <th className="p-2 text-center font-semibold">Score</th>
+                        <th className="p-2 text-left font-semibold">Team 2</th>
+                        <th className="p-2 text-center font-semibold">Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roundMatches.map((match, index) => (
+                        <tr 
+                          key={match.id}
+                          className={`border-b border-gray-200 print:border-gray-400 ${
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-25 print:bg-white'
+                          }`}
+                        >
+                          <td className="p-2 font-medium text-center">
+                            {match.court}
+                          </td>
+                          <td className="p-2">
+                            <div className="space-y-1">
+                              <div className="font-medium">{match.players[0]?.name}</div>
+                              <div className="font-medium">{match.players[1]?.name}</div>
+                            </div>
+                          </td>
+                          <td className="p-2 text-center">
+                            <div className="inline-block border-2 border-gray-400 print:border-black w-12 h-8 print:w-10 print:h-6">
+                              {/* Score box for Team 1 */}
+                            </div>
+                          </td>
+                          <td className="p-2">
+                            <div className="space-y-1">
+                              <div className="font-medium">{match.players[2]?.name}</div>
+                              <div className="font-medium">{match.players[3]?.name}</div>
+                            </div>
+                          </td>
+                          <td className="p-2 text-center">
+                            <div className="inline-block border-2 border-gray-400 print:border-black w-12 h-8 print:w-10 print:h-6">
+                              {/* Score box for Team 2 */}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     );
