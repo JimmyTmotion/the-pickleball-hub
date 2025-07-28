@@ -20,8 +20,8 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   onTimerReset,
   currentRound
 }) => {
-  const [initialMinutes, setInitialMinutes] = useState(20);
-  const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 minutes in seconds
+  const [initialMinutes, setInitialMinutes] = useState(9);
+  const [timeLeft, setTimeLeft] = useState(9 * 60); // 9 minutes in seconds
   const [isRunning, setIsRunning] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
