@@ -224,7 +224,7 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
             >
               <div className="aspect-video relative overflow-hidden rounded-t-lg">
                 <img
-                  src={event.thumbnail || '/lovable-uploads/f2272b16-c6f9-43a4-9c5e-9f2f98722a16.png'}
+                  src={event.thumbnail || 'https://uonuqhtnvleeybejigsr.supabase.co/storage/v1/object/public/event-thumbnails/thumbnails/1753648552098-58l7oybrg18.jpg'}
                   alt={event.title}
                   className="w-full h-full object-cover"
                   onError={(e) => {
