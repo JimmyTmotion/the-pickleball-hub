@@ -108,7 +108,7 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto mb-8">
+          <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto mb-8">
             <AnimatedSection animation="scale-in" delay={600}>
               <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardHeader>
@@ -145,43 +145,8 @@ const Home = () => {
               </Card>
             </AnimatedSection>
 
-            <AnimatedSection animation="scale-in" delay={800}>
-              <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-2xl">
-                    <Clock className="h-8 w-8 text-purple-600" />
-                    Match Timer
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-6">
-                    Keep track of match time with a large, easy-to-read timer. Perfect for 
-                    timed matches with customisable duration and audio alerts.
-                  </p>
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Clock className="h-4 w-4" />
-                      Customisable duration
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Trophy className="h-4 w-4" />
-                      Fullscreen mode
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <BarChart3 className="h-4 w-4" />
-                      Audio & visual alerts
-                    </div>
-                  </div>
-                  <Link to="/timer">
-                    <Button variant="secondary" className="w-full">
-                      Start Timer
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </AnimatedSection>
 
-            <AnimatedSection animation="scale-in" delay={1000}>
+            <AnimatedSection animation="scale-in" delay={800}>
               <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-2xl">
