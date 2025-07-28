@@ -51,9 +51,9 @@ const Navigation = () => {
             <button className="text-gray-400 cursor-not-allowed" disabled>
               Coaching
             </button>
-            <button className="text-gray-400 cursor-not-allowed" disabled>
+            <Link to="/about" className="text-gray-600 hover:text-primary transition-colors">
               About
-            </button>
+            </Link>
             <button 
               className="text-gray-600 hover:text-primary transition-colors cursor-pointer"
               onClick={() => setIsContactFormOpen(true)}
@@ -123,9 +123,13 @@ const Navigation = () => {
               <button className="text-gray-400 cursor-not-allowed text-left py-2" disabled>
                 Coaching
               </button>
-              <button className="text-gray-400 cursor-not-allowed text-left py-2" disabled>
+              <Link 
+                to="/about" 
+                className="text-gray-600 hover:text-primary transition-colors py-2"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 About
-              </button>
+              </Link>
               <button 
                 className="text-gray-600 hover:text-primary transition-colors cursor-pointer text-left py-2"
                 onClick={() => {
