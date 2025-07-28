@@ -155,7 +155,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
             <CardHeader className="hover:bg-muted/50 transition-colors">
               <CardTitle className="flex items-center justify-between text-2xl font-bold text-blue-700">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-6" />
+                  <Calendar className="h-5 w-5" />
                   Match Schedule
                 </div>
                 <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
