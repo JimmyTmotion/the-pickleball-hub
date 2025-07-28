@@ -185,9 +185,17 @@ const Tournament = () => {
     };
 
     setSchedule(updatedSchedule);
+    
+    // Clear any pending results for this match since the lineup changed
+    setRoundResults(prev => {
+      const updated = { ...prev };
+      delete updated[matchId];
+      return updated;
+    });
+
     toast({
       title: "Players Swapped",
-      description: "Match lineup has been updated successfully.",
+      description: "Match lineup has been updated successfully. Any unsaved results for this match have been cleared.",
     });
   };
 
