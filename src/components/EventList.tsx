@@ -9,6 +9,7 @@ import { CalendarDays, MapPin } from 'lucide-react';
 import { Event, EventType, EventFilters, MatchType } from '@/types/event';
 import { supabase } from '@/integrations/supabase/client';
 import EventModal from './EventModal';
+import { getDefaultThumbnail } from '@/utils/defaultThumbnail';
 
 interface EventListProps {
   refreshTrigger?: number;
@@ -17,6 +18,7 @@ interface EventListProps {
 const EventList = ({ refreshTrigger }: EventListProps) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [defaultThumbnail, setDefaultThumbnail] = useState<string>('');
   const [filters, setFilters] = useState<EventFilters>({});
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,7 +36,13 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
 
   useEffect(() => {
     loadEvents();
+    loadDefaultThumbnail();
   }, [refreshTrigger]);
+
+  const loadDefaultThumbnail = async () => {
+    const thumbnail = await getDefaultThumbnail();
+    setDefaultThumbnail(thumbnail);
+  };
 
   useEffect(() => {
     applyFilters();
@@ -224,7 +232,7 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
             >
               <div className="aspect-video relative overflow-hidden rounded-t-lg">
                 <img
-                  src={event.thumbnail || 'https://uonuqhtnvleeybejigsr.supabase.co/storage/v1/object/public/event-thumbnails/thumbnails/1753648552098-58l7oybrg18.jpg'}
+                  src={event.thumbnail || defaultThumbnail}
                   alt={event.title}
                   className="w-full h-full object-cover"
                   onError={(e) => {

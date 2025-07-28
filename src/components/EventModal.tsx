@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, MapPin, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Event, EventType } from '@/types/event';
+import { getDefaultThumbnail } from '@/utils/defaultThumbnail';
 
 interface EventModalProps {
   event: Event | null;
@@ -14,6 +15,16 @@ interface EventModalProps {
 }
 
 const EventModal = ({ event, events, isOpen, onClose, onNavigate }: EventModalProps) => {
+  const [defaultThumbnail, setDefaultThumbnail] = useState<string>('');
+
+  useEffect(() => {
+    const loadDefaultThumbnail = async () => {
+      const thumbnail = await getDefaultThumbnail();
+      setDefaultThumbnail(thumbnail);
+    };
+    loadDefaultThumbnail();
+  }, []);
+
   if (!event) return null;
 
   const currentIndex = events.findIndex(e => e.id === event.id);
@@ -67,7 +78,7 @@ const EventModal = ({ event, events, isOpen, onClose, onNavigate }: EventModalPr
           {/* Event Image */}
           <div className="aspect-video relative overflow-hidden rounded-lg">
             <img
-              src={event.thumbnail || 'https://uonuqhtnvleeybejigsr.supabase.co/storage/v1/object/public/event-thumbnails/thumbnails/1753648552098-58l7oybrg18.jpg'}
+              src={event.thumbnail || defaultThumbnail}
               alt={event.title}
               className="w-full h-full object-cover"
               onError={(e) => {

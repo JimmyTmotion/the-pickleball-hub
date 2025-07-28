@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Image as ImageIcon, ExternalLink, FileText } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Trash2, Image as ImageIcon, ExternalLink, Save, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { clearDefaultThumbnailCache } from '@/utils/defaultThumbnail';
 
 interface StorageFile {
   name: string;
@@ -28,10 +32,13 @@ const ImageManagement = () => {
   const [images, setImages] = useState<ImageWithUrl[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [defaultThumbnail, setDefaultThumbnail] = useState('');
+  const [savingDefault, setSavingDefault] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadImages();
+    loadDefaultThumbnail();
   }, []);
 
   const loadImages = async () => {
@@ -97,6 +104,58 @@ const ImageManagement = () => {
     }
   };
 
+  const loadDefaultThumbnail = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_email_settings')
+        .select('setting_value')
+        .eq('setting_key', 'default_event_thumbnail')
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setDefaultThumbnail(data.setting_value);
+      }
+    } catch (error: any) {
+      console.error('Error loading default thumbnail:', error);
+    }
+  };
+
+  const saveDefaultThumbnail = async () => {
+    try {
+      setSavingDefault(true);
+
+      const { error } = await supabase
+        .from('admin_email_settings')
+        .upsert({
+          setting_key: 'default_event_thumbnail',
+          setting_value: defaultThumbnail
+        }, {
+          onConflict: 'setting_key'
+        });
+
+      if (error) throw error;
+
+      // Clear the cache so components will use the new default
+      clearDefaultThumbnailCache();
+
+      toast({
+        title: "Success",
+        description: "Default thumbnail updated successfully",
+      });
+    } catch (error: any) {
+      console.error('Error saving default thumbnail:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save default thumbnail",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingDefault(false);
+    }
+  };
+
   const handleDeleteImage = async (fileName: string) => {
     try {
       setDeleting(fileName);
@@ -142,16 +201,67 @@ const ImageManagement = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ImageIcon className="h-5 w-5" />
-          Image Management
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Manage uploaded event thumbnail images. Be careful deleting images that are still in use by events.
-        </p>
-      </CardHeader>
+    <div className="space-y-6">
+      {/* Default Thumbnail Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Default Thumbnail Settings
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Set the default thumbnail URL that will be used when an event doesn't have a thumbnail or the thumbnail is deleted.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="default-thumbnail">Default Thumbnail URL</Label>
+            <Input
+              id="default-thumbnail"
+              placeholder="Enter default thumbnail URL"
+              value={defaultThumbnail}
+              onChange={(e) => setDefaultThumbnail(e.target.value)}
+            />
+          </div>
+          {defaultThumbnail && (
+            <div className="space-y-2">
+              <Label>Preview</Label>
+              <div className="w-32 h-32 bg-muted rounded-lg overflow-hidden">
+                <img
+                  src={defaultThumbnail}
+                  alt="Default thumbnail preview"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement!.innerHTML = `<div class="w-full h-full flex items-center justify-center text-muted-foreground"><span class="text-xs">Invalid URL</span></div>`;
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          <Button 
+            onClick={saveDefaultThumbnail} 
+            disabled={savingDefault || !defaultThumbnail}
+            className="w-full sm:w-auto"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {savingDefault ? 'Saving...' : 'Save Default Thumbnail'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Image Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Image Management
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Manage uploaded event thumbnail images. Be careful deleting images that are still in use by events.
+          </p>
+        </CardHeader>
       <CardContent>
         {images.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
@@ -264,8 +374,9 @@ const ImageManagement = () => {
             </TableBody>
           </Table>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
