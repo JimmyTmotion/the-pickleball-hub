@@ -25,7 +25,7 @@ import {
   MapPin,
   ChevronDown
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +40,7 @@ import OverallLeaderboard from '@/components/OverallLeaderboard';
 const MyAccount: React.FC = () => {
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -276,7 +277,11 @@ const MyAccount: React.FC = () => {
               <User className="h-4 w-4" />
               Profile
             </TabsTrigger>
-            <TabsTrigger value="schedules" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="schedules" 
+              className="flex items-center gap-2"
+              onClick={() => navigate('/history')}
+            >
               <Calendar className="h-4 w-4" />
               My Schedules
             </TabsTrigger>
