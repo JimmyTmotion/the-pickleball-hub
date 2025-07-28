@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3, ChevronDown, Edit } from 'lucide-react';
-import { getSavedSchedules, deleteSchedule, updateMatchResult, updatePlayerNames } from '@/utils/scheduleStorage';
+import { Input } from '@/components/ui/input';
+import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3, ChevronDown, Edit, Check, X } from 'lucide-react';
+import { getSavedSchedules, deleteSchedule, updateMatchResult, updatePlayerNames, updateScheduleName } from '@/utils/scheduleStorage';
 import { SavedSchedule, MatchResult } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import { Link } from 'react-router-dom';
@@ -20,6 +21,8 @@ import AnimatedSection from '@/components/AnimatedSection';
 const ScheduleHistory: React.FC = () => {
   const [savedSchedules, setSavedSchedules] = React.useState<SavedSchedule[]>([]);
   const [selectedSchedule, setSelectedSchedule] = React.useState<SavedSchedule | null>(null);
+  const [editingScheduleId, setEditingScheduleId] = React.useState<string | null>(null);
+  const [editingName, setEditingName] = React.useState<string>('');
 
   React.useEffect(() => {
     const loadSchedules = async () => {
@@ -79,6 +82,28 @@ const ScheduleHistory: React.FC = () => {
       );
       setSavedSchedules(updatedSchedules);
     }
+  };
+
+  const handleEditScheduleName = (schedule: SavedSchedule) => {
+    setEditingScheduleId(schedule.id);
+    setEditingName(schedule.name);
+  };
+
+  const handleSaveScheduleName = async (scheduleId: string) => {
+    try {
+      await updateScheduleName(scheduleId, editingName);
+      const updatedSchedules = await getSavedSchedules();
+      setSavedSchedules(updatedSchedules);
+      setEditingScheduleId(null);
+      setEditingName('');
+    } catch (error) {
+      console.error('Failed to update schedule name:', error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingScheduleId(null);
+    setEditingName('');
   };
 
   const handleDownload = (schedule: SavedSchedule) => {
@@ -409,8 +434,52 @@ const ScheduleHistory: React.FC = () => {
                     <Card key={schedule.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader>
                         <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-lg">{schedule.name}</CardTitle>
+                          <div className="flex-1">
+                            {editingScheduleId === schedule.id ? (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={editingName}
+                                  onChange={(e) => setEditingName(e.target.value)}
+                                  className="text-lg font-semibold"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSaveScheduleName(schedule.id);
+                                    } else if (e.key === 'Escape') {
+                                      handleCancelEdit();
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleSaveScheduleName(schedule.id)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Check className="h-4 w-4 text-green-600" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={handleCancelEdit}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <X className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <CardTitle className="text-lg">{schedule.name}</CardTitle>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditScheduleName(schedule)}
+                                  className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
                             <p className="text-sm text-muted-foreground mt-1">
                               Created by {schedule.createdBy?.name || 'Unknown User'}
                             </p>
