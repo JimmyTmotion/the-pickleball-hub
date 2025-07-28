@@ -3,13 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Calendar, Users, TrendingUp, UserX, ChevronDown, Play } from 'lucide-react';
-import { Schedule } from '@/types/schedule';
+import { Calendar, Users, TrendingUp, UserX, ChevronDown, Play, Edit } from 'lucide-react';
+import { Schedule, Player } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import ScheduleDisplayOptions from './ScheduleDisplayOptions';
 import PlayerAnalytics from './PlayerAnalytics';
+import PlayerSwapper from './PlayerSwapper';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 
 interface ScheduleDisplayProps {
   schedule: Schedule;
@@ -18,8 +20,10 @@ interface ScheduleDisplayProps {
 
 const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName }) => {
   const [viewMode, setViewMode] = useState<'standard' | 'printable'>('standard');
+  const [editingMatch, setEditingMatch] = useState<number | null>(null);
+  const [currentSchedule, setCurrentSchedule] = useState(schedule);
   const navigate = useNavigate();
-  const { matches, playerStats, roundSittingOut } = schedule;
+  const { matches, playerStats, roundSittingOut } = currentSchedule;
 
   // Group matches by round
   const matchesByRound = matches.reduce((acc, match) => {
@@ -32,7 +36,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
   }, {} as Record<number, typeof matches>);
 
   const handleDownloadCSV = () => {
-    const csvContent = exportScheduleToCSV(schedule);
+    const csvContent = exportScheduleToCSV(currentSchedule);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -44,10 +48,32 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
     document.body.removeChild(link);
   };
 
+  const handlePlayerSwap = (matchId: number, fromIndex: number, toIndex: number) => {
+    const updatedMatches = matches.map(match => {
+      if (match.id === matchId) {
+        const newPlayers = [...match.players];
+        [newPlayers[fromIndex], newPlayers[toIndex]] = [newPlayers[toIndex], newPlayers[fromIndex]];
+        return { ...match, players: newPlayers };
+      }
+      return match;
+    });
+
+    const updatedSchedule = {
+      ...currentSchedule,
+      matches: updatedMatches
+    };
+
+    setCurrentSchedule(updatedSchedule);
+    toast({
+      title: "Players Swapped",
+      description: "Match lineup has been updated successfully.",
+    });
+  };
+
   const handleBeginTournament = () => {
     navigate('/tournament', {
       state: {
-        schedule,
+        schedule: currentSchedule,
         name: scheduleName || 'Tournament'
       }
     });
@@ -189,27 +215,45 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
                               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                                 Court {match.court}
                               </Badge>
-                              <div className="text-sm text-gray-500">
-                                Match #{match.id}
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setEditingMatch(editingMatch === match.id ? null : match.id)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <div className="text-sm text-gray-500">
+                                  Match #{match.id}
+                                </div>
                               </div>
                             </div>
                             
-                            <div className="space-y-2">
-                              <div className="grid grid-cols-2 gap-2">
-                                {match.players.map((player, index) => (
-                                  <div 
-                                    key={player.id}
-                                    className={`text-sm p-2 rounded ${
-                                      index < 2 
-                                        ? 'bg-blue-50 text-blue-700' 
-                                        : 'bg-orange-50 text-orange-700'
-                                    }`}
-                                  >
-                                    {player.name}
-                                  </div>
-                                ))}
+                            {editingMatch === match.id ? (
+                              <PlayerSwapper
+                                players={match.players}
+                                onSwap={(fromIndex, toIndex) => handlePlayerSwap(match.id, fromIndex, toIndex)}
+                                className="mt-2"
+                              />
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                  {match.players.map((player, index) => (
+                                    <div 
+                                      key={player.id}
+                                      className={`text-sm p-2 rounded ${
+                                        index < 2 
+                                          ? 'bg-blue-50 text-blue-700' 
+                                          : 'bg-orange-50 text-orange-700'
+                                      }`}
+                                    >
+                                      {player.name}
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
@@ -284,7 +328,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent>
-              <PlayerAnalytics schedule={schedule} />
+              <PlayerAnalytics schedule={currentSchedule} />
             </CardContent>
           </CollapsibleContent>
         </Card>

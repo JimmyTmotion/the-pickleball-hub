@@ -250,10 +250,10 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
       // Remove selected players from available pool
       availablePlayerIds = availablePlayerIds.filter(id => !matchPlayers.includes(id));
       
-      // Create match
+      // Create match with correct court assignment (court + 1 since courts start at 1)
       const match: Match = {
         id: matches.length + 1,
-        court: bestMatch.court,
+        court: court + 1,
         players: matchPlayers.map(id => players.find(p => p.id === id)!),
         round
       };

@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Play, Pause, RotateCcw, ChevronRight, Trophy } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, ChevronRight, Trophy, Edit } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import LeagueTable from '@/components/LeagueTable';
 import AnimatedSection from '@/components/AnimatedSection';
+import PlayerSwapper from '@/components/PlayerSwapper';
 
 interface TournamentState {
   schedule: Schedule;
@@ -28,6 +29,7 @@ const Tournament = () => {
   const [showResults, setShowResults] = useState(false);
   const [roundResults, setRoundResults] = useState<Record<number, MatchResult>>({});
   const [tournamentComplete, setTournamentComplete] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<number | null>(null);
 
   useEffect(() => {
     if (!tournamentData) {
@@ -137,6 +139,28 @@ const Tournament = () => {
     }
   };
 
+  const handlePlayerSwap = (matchId: number, fromIndex: number, toIndex: number) => {
+    const updatedMatches = schedule.matches.map(match => {
+      if (match.id === matchId) {
+        const newPlayers = [...match.players];
+        [newPlayers[fromIndex], newPlayers[toIndex]] = [newPlayers[toIndex], newPlayers[fromIndex]];
+        return { ...match, players: newPlayers };
+      }
+      return match;
+    });
+
+    const updatedSchedule = {
+      ...schedule,
+      matches: updatedMatches
+    };
+
+    setSchedule(updatedSchedule);
+    toast({
+      title: "Players Swapped",
+      description: "Match lineup has been updated successfully.",
+    });
+  };
+
   const handleNextRound = () => {
     if (currentRound < totalRounds) {
       setCurrentRound(currentRound + 1);
@@ -241,58 +265,75 @@ const Tournament = () => {
           {currentRoundMatches.map((match) => (
             <Card key={match.id} className="border-l-4 border-l-blue-500">
               <CardHeader>
-                <CardTitle className="text-center">
+                <CardTitle className="flex items-center justify-between">
                   <Badge variant="outline" className="mb-2">Court {match.court}</Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setEditingMatch(editingMatch === match.id ? null : match.id)}
+                    className="h-8 w-8 p-0"
+                    disabled={showResults}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {/* Team 1 */}
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="font-semibold text-blue-700 mb-2">Team 1</div>
-                    <div className="space-y-1">
-                      <div className="font-medium">{match.players[0]?.name}</div>
-                      <div className="font-medium">{match.players[1]?.name}</div>
-                    </div>
-                    {showResults && (
-                      <div className="mt-3">
-                        <Label htmlFor={`team1-${match.id}`} className="text-sm">Score:</Label>
-                        <Input
-                          id={`team1-${match.id}`}
-                          type="number"
-                          min="0"
-                          className="mt-1"
-                          onChange={(e) => handleResultChange(match.id, 'team1Score', e.target.value)}
-                          value={roundResults[match.id]?.team1Score || ''}
-                        />
+                {editingMatch === match.id && !showResults ? (
+                  <PlayerSwapper
+                    players={match.players}
+                    onSwap={(fromIndex, toIndex) => handlePlayerSwap(match.id, fromIndex, toIndex)}
+                    className="mt-2"
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {/* Team 1 */}
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="font-semibold text-blue-700 mb-2">Team 1</div>
+                      <div className="space-y-1">
+                        <div className="font-medium">{match.players[0]?.name}</div>
+                        <div className="font-medium">{match.players[1]?.name}</div>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="text-center text-xl font-bold text-gray-600">VS</div>
-
-                  {/* Team 2 */}
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="font-semibold text-orange-700 mb-2">Team 2</div>
-                    <div className="space-y-1">
-                      <div className="font-medium">{match.players[2]?.name}</div>
-                      <div className="font-medium">{match.players[3]?.name}</div>
+                      {showResults && (
+                        <div className="mt-3">
+                          <Label htmlFor={`team1-${match.id}`} className="text-sm">Score:</Label>
+                          <Input
+                            id={`team1-${match.id}`}
+                            type="number"
+                            min="0"
+                            className="mt-1"
+                            onChange={(e) => handleResultChange(match.id, 'team1Score', e.target.value)}
+                            value={roundResults[match.id]?.team1Score || ''}
+                          />
+                        </div>
+                      )}
                     </div>
-                    {showResults && (
-                      <div className="mt-3">
-                        <Label htmlFor={`team2-${match.id}`} className="text-sm">Score:</Label>
-                        <Input
-                          id={`team2-${match.id}`}
-                          type="number"
-                          min="0"
-                          className="mt-1"
-                          onChange={(e) => handleResultChange(match.id, 'team2Score', e.target.value)}
-                          value={roundResults[match.id]?.team2Score || ''}
-                        />
+
+                    <div className="text-center text-xl font-bold text-gray-600">VS</div>
+
+                    {/* Team 2 */}
+                    <div className="text-center p-4 bg-orange-50 rounded-lg">
+                      <div className="font-semibold text-orange-700 mb-2">Team 2</div>
+                      <div className="space-y-1">
+                        <div className="font-medium">{match.players[2]?.name}</div>
+                        <div className="font-medium">{match.players[3]?.name}</div>
                       </div>
-                    )}
+                      {showResults && (
+                        <div className="mt-3">
+                          <Label htmlFor={`team2-${match.id}`} className="text-sm">Score:</Label>
+                          <Input
+                            id={`team2-${match.id}`}
+                            type="number"
+                            min="0"
+                            className="mt-1"
+                            onChange={(e) => handleResultChange(match.id, 'team2Score', e.target.value)}
+                            value={roundResults[match.id]?.team2Score || ''}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           ))}
