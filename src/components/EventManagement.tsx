@@ -15,13 +15,14 @@ import { Edit, Trash2, CalendarDays } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Event, EventType, MatchType } from '@/types/event';
+import ImageUpload from './ImageUpload';
 
 const eventTypes: EventType[] = [
   'Tournament', 'Social', 'League', 'Nationals', 'Other', 'Regular Recreational', 'Festival'
 ];
 
 const matchTypes: MatchType[] = [
-  'Singles', 'Mixed Doubles', 'Gender Doubles'
+  'Singles', 'Mixed Doubles', 'Gender Doubles', 'Team Event'
 ];
 
 interface EventManagementProps {
@@ -114,6 +115,14 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
     setSaving(true);
 
     try {
+      // Check if thumbnail changed and clean up old one
+      const oldThumbnail = editingEvent.thumbnail;
+      const newThumbnail = editFormData.thumbnail;
+      
+      if (oldThumbnail && newThumbnail !== oldThumbnail) {
+        await cleanupUnusedThumbnail(oldThumbnail);
+      }
+
       const { error } = await supabase
         .from('events')
         .update({
@@ -153,29 +162,67 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
     }
   };
 
+  // Function to check if thumbnail is used elsewhere and clean up if not
+  const cleanupUnusedThumbnail = async (thumbnailUrl: string) => {
+    if (!thumbnailUrl) return;
+
+    try {
+      // Check if this thumbnail is used by other events
+      const { data: otherEvents, error } = await supabase
+        .from('events')
+        .select('id')
+        .eq('thumbnail', thumbnailUrl)
+        .neq('id', editingEvent?.id || '');
+
+      if (error) {
+        console.warn('Error checking thumbnail usage:', error);
+        return;
+      }
+
+      // If no other events use this thumbnail, delete it from storage
+      if (!otherEvents || otherEvents.length === 0) {
+        await deleteThumbnailFromStorage(thumbnailUrl);
+      }
+    } catch (error) {
+      console.warn('Error during thumbnail cleanup:', error);
+    }
+  };
+
+  const deleteThumbnailFromStorage = async (thumbnailUrl: string) => {
+    try {
+      const url = new URL(thumbnailUrl);
+      const pathParts = url.pathname.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      
+      if (fileName && fileName !== '') {
+        const { error: storageError } = await supabase.storage
+          .from('event-thumbnails')
+          .remove([`logos/${fileName}`]);
+        
+        if (storageError) {
+          console.warn('Failed to delete thumbnail from storage:', storageError);
+        }
+      }
+    } catch (error) {
+      console.warn('Error processing thumbnail URL for deletion:', error);
+    }
+  };
+
   const handleDeleteEvent = async (eventId: string, eventTitle: string, thumbnail?: string) => {
     try {
-      // First delete the associated image if it exists
+      // Check if thumbnail is used by other events before deleting
       if (thumbnail) {
-        try {
-          // Extract filename from the thumbnail URL
-          const url = new URL(thumbnail);
-          const pathParts = url.pathname.split('/');
-          const fileName = pathParts[pathParts.length - 1];
-          
-          if (fileName && fileName !== '') {
-            const { error: storageError } = await supabase.storage
-              .from('event-thumbnails')
-              .remove([fileName]);
-            
-            if (storageError) {
-              console.warn('Failed to delete image from storage:', storageError);
-              // Continue with event deletion even if image deletion fails
-            }
-          }
-        } catch (imageError) {
-          console.warn('Error processing thumbnail URL:', imageError);
-          // Continue with event deletion even if image processing fails
+        const { data: otherEvents, error } = await supabase
+          .from('events')
+          .select('id')
+          .eq('thumbnail', thumbnail)
+          .neq('id', eventId);
+
+        if (error) {
+          console.warn('Error checking thumbnail usage:', error);
+        } else if (!otherEvents || otherEvents.length === 0) {
+          // Only delete thumbnail if no other events use it
+          await deleteThumbnailFromStorage(thumbnail);
         }
       }
 
@@ -189,7 +236,7 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
 
       toast({
         title: "Success",
-        description: `Event "${eventTitle}" and associated image deleted successfully`,
+        description: `Event "${eventTitle}" deleted successfully`,
       });
 
       await loadEvents();
@@ -387,12 +434,10 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
                           </div>
 
                           <div>
-                            <Label htmlFor="edit-thumbnail">Thumbnail URL</Label>
-                            <Input
-                              id="edit-thumbnail"
-                              type="url"
-                              value={editFormData.thumbnail || ''}
-                              onChange={(e) => setEditFormData((prev: any) => ({ ...prev, thumbnail: e.target.value }))}
+                            <ImageUpload
+                              currentImageUrl={editFormData.thumbnail || ''}
+                              onImageChange={(imageUrl) => setEditFormData((prev: any) => ({ ...prev, thumbnail: imageUrl }))}
+                              title="Event Thumbnail"
                             />
                           </div>
 
