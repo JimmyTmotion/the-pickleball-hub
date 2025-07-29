@@ -61,6 +61,7 @@ const ClubManagement = () => {
   const { toast } = useToast();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [availableClubs, setAvailableClubs] = useState<Club[]>([]);
+  const [userApplications, setUserApplications] = useState<Set<string>>(new Set());
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -167,19 +168,23 @@ const ClubManagement = () => {
 
       if (clubsError) throw clubsError;
 
-      // Get clubs user is already a member of or owns
+      // Get clubs user is already a member of (approved), owns, or has pending applications for
       const { data: userMemberships, error: membershipError } = await supabase
         .from('club_members')
-        .select('club_id')
+        .select('club_id, status')
         .eq('user_id', user.id);
 
       if (membershipError) throw membershipError;
 
-      const memberClubIds = userMemberships?.map(m => m.club_id) || [];
+      const approvedClubIds = userMemberships?.filter(m => m.status === 'approved').map(m => m.club_id) || [];
+      const pendingApplicationIds = userMemberships?.filter(m => m.status === 'pending').map(m => m.club_id) || [];
       
-      // Filter out clubs user owns or is already a member of
+      // Track pending applications
+      setUserApplications(new Set(pendingApplicationIds));
+      
+      // Filter out clubs user owns or is already an approved member of, but keep pending ones visible
       const available = allClubs?.filter(club => 
-        club.owner_id !== user.id && !memberClubIds.includes(club.id)
+        club.owner_id !== user.id && !approvedClubIds.includes(club.id)
       ) || [];
 
       setAvailableClubs(available);
@@ -767,9 +772,15 @@ const ClubManagement = () => {
                               </div>
                             </div>
                           </div>
-                          <Button onClick={() => applyToJoinClub(club.id)} size="sm">
-                            Apply to Join
-                          </Button>
+                           {userApplications.has(club.id) ? (
+                             <Badge variant="outline" className="text-xs">
+                               Application pending
+                             </Badge>
+                           ) : (
+                             <Button onClick={() => applyToJoinClub(club.id)} size="sm">
+                               Apply to Join
+                             </Button>
+                           )}
                         </div>
                       </div>
                     ))}
