@@ -1,4 +1,4 @@
-// Global Optimized Pickleball Scheduler using Simulated Annealing
+// Global Optimized Pickleball Scheduler with Hard Opponent Gap Constraint
 
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
@@ -21,19 +21,20 @@ class SeededRandom {
 interface PlayerStats {
   matchCount: number;
   partnerships: Set<string>;
-  opponents: Set<string>;
+  opponents: Map<number, number>;
   courtsPlayed: Set<number>;
   sitOutRounds: Set<number>;
 }
 
 const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: number): number => {
   const stats: Record<number, PlayerStats> = {};
+  const opponentCounts = new Map<string, number>();
 
   for (let i = 1; i <= numPlayers; i++) {
     stats[i] = {
       matchCount: 0,
       partnerships: new Set(),
-      opponents: new Set(),
+      opponents: new Map(),
       courtsPlayed: new Set(),
       sitOutRounds: new Set()
     };
@@ -55,8 +56,11 @@ const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: numb
 
     for (const i of [0, 1]) {
       for (const j of [2, 3]) {
-        stats[ids[i]].opponents.add(ids[j].toString());
-        stats[ids[j]].opponents.add(ids[i].toString());
+        stats[ids[i]].opponents.set(ids[j], (stats[ids[i]].opponents.get(ids[j]) || 0) + 1);
+        stats[ids[j]].opponents.set(ids[i], (stats[ids[j]].opponents.get(ids[i]) || 0) + 1);
+
+        const key = ids[i] < ids[j] ? `${ids[i]}-${ids[j]}` : `${ids[j]}-${ids[i]}`;
+        opponentCounts.set(key, (opponentCounts.get(key) || 0) + 1);
       }
     }
 
@@ -70,6 +74,12 @@ const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: numb
       if (!played.has(i)) stats[i].sitOutRounds.add(r);
     }
   }
+
+  // Opponent fairness hard constraint
+  const opponentFreqs = [...opponentCounts.values()];
+  const maxOpponent = Math.max(...opponentFreqs);
+  const minOpponent = Math.min(...opponentFreqs);
+  if (maxOpponent - minOpponent > 1) return Infinity;
 
   let partnershipPenalty = 0;
   let opponentPenalty = 0;
@@ -142,12 +152,11 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
 
   let temp = 1000;
   const cooling = 0.995;
-  const steps = 10000;
+  const steps = 20000;
 
   for (let step = 0; step < steps; step++) {
     const next = [...current];
 
-    // Swap two players in different matches
     const i = Math.floor(rng.next() * next.length);
     const j = Math.floor(rng.next() * next.length);
     const m1 = next[i];
@@ -162,7 +171,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     const score = getScheduleScore(next, numRounds, numPlayers);
     const delta = score - currentScore;
 
-    if (delta < 0 || Math.exp(-delta / temp) > rng.next()) {
+    if (score !== Infinity && (delta < 0 || Math.exp(-delta / temp) > rng.next())) {
       current = next;
       currentScore = score;
       if (score < bestScore) {
@@ -170,7 +179,6 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
         bestScore = score;
       }
     } else {
-      // Revert swap
       m2.players[pj] = m1.players[pi];
       m1.players[pi] = tempPlayer;
     }
