@@ -120,6 +120,39 @@ const ScheduleHistory: React.FC = () => {
     document.body.removeChild(a);
   };
 
+  const areAllMatchesCompleted = (schedule: SavedSchedule) => {
+    return schedule.schedule.matches.every(match => match.result?.completed);
+  };
+
+  const downloadMatchResultsCSV = (schedule: SavedSchedule) => {
+    const csvHeader = "Match ID,Round,Court,Team 1 Player 1,Team 1 Player 2,Team 2 Player 1,Team 2 Player 2,Team 1 Score,Team 2 Score\n";
+    
+    const csvRows = schedule.schedule.matches
+      .filter(match => match.result?.completed)
+      .map(match => {
+        const team1Player1 = match.players[0]?.name || '';
+        const team1Player2 = match.players[1]?.name || '';
+        const team2Player1 = match.players[2]?.name || '';
+        const team2Player2 = match.players[3]?.name || '';
+        const team1Score = match.result?.team1Score || 0;
+        const team2Score = match.result?.team2Score || 0;
+        
+        return `${match.id},${match.round},${match.court},"${team1Player1}","${team1Player2}","${team2Player1}","${team2Player2}",${team1Score},${team2Score}`;
+      });
+    
+    const csv = csvHeader + csvRows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `${schedule.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   if (selectedSchedule) {
     // Determine default tab based on match results
     const hasCompletedMatches = selectedSchedule.schedule.matches.some(m => m.result?.completed);
@@ -211,9 +244,22 @@ const ScheduleHistory: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                 </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="space-y-6">
-                    <LeagueTable schedule={selectedSchedule.schedule} title={`${selectedSchedule.name} - League Table`} />
+                 <CollapsibleContent>
+                   <CardContent className="space-y-6">
+                     <div className="flex items-center justify-between mb-4">
+                       <div></div>
+                       {areAllMatchesCompleted(selectedSchedule) && (
+                         <Button
+                           onClick={() => downloadMatchResultsCSV(selectedSchedule)}
+                           className="flex items-center gap-2"
+                           variant="outline"
+                         >
+                           <Download className="h-4 w-4" />
+                           Download Results CSV
+                         </Button>
+                       )}
+                     </div>
+                     <LeagueTable schedule={selectedSchedule.schedule} title={`${selectedSchedule.name} - League Table`} />
                     
                     {/* Awards Section */}
                     {(() => {
