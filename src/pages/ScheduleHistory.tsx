@@ -33,6 +33,8 @@ const ScheduleHistory: React.FC = () => {
   const [assigningScheduleId, setAssigningScheduleId] = React.useState<string | null>(null);
   const [selectedClubId, setSelectedClubId] = React.useState<string>('');
   const [selectedSubgroupId, setSelectedSubgroupId] = React.useState<string>('');
+  const [allClubs, setAllClubs] = React.useState<any[]>([]);
+  const [allSubgroups, setAllSubgroups] = React.useState<any[]>([]);
   const { user } = useAuth();
 
   React.useEffect(() => {
@@ -53,6 +55,18 @@ const ScheduleHistory: React.FC = () => {
         .eq('owner_id', user.id);
       
       setClubs(clubsData || []);
+      
+      // Also load all clubs and subgroups for display purposes
+      const { data: allClubsData } = await supabase
+        .from('clubs')
+        .select('*');
+      
+      const { data: allSubgroupsData } = await supabase
+        .from('club_subgroups')
+        .select('*');
+      
+      setAllClubs(allClubsData || []);
+      setAllSubgroups(allSubgroupsData || []);
     };
     loadClubs();
   }, [user]);
@@ -185,6 +199,48 @@ const ScheduleHistory: React.FC = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleUnassignSchedule = async (scheduleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .update({
+          club_id: null,
+          subgroup_id: null
+        })
+        .eq('id', scheduleId);
+
+      if (error) throw error;
+
+      // Refresh the schedules list
+      const updatedSchedules = await getSavedSchedules();
+      setSavedSchedules(updatedSchedules);
+      
+      toast({
+        title: "Schedule unassigned successfully",
+        description: "The schedule has been unassigned from the club and subgroup.",
+      });
+    } catch (error) {
+      console.error('Error unassigning schedule:', error);
+      toast({
+        title: "Error unassigning schedule",
+        description: "Failed to unassign the schedule. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getClubName = (clubId: string | null) => {
+    if (!clubId) return null;
+    const club = allClubs.find(c => c.id === clubId);
+    return club?.name || 'Unknown Club';
+  };
+
+  const getSubgroupName = (subgroupId: string | null) => {
+    if (!subgroupId) return null;
+    const subgroup = allSubgroups.find(s => s.id === subgroupId);
+    return subgroup?.name || 'Unknown Subgroup';
   };
 
   const handleDownload = (schedule: SavedSchedule) => {
@@ -661,86 +717,115 @@ const ScheduleHistory: React.FC = () => {
                              >
                                Manage & View Results
                              </Button>
-                             {clubs.length > 0 && (
-                               <Dialog>
-                                 <DialogTrigger asChild>
-                                   <Button
-                                     size="sm"
-                                     variant="outline"
-                                     onClick={() => {
-                                       setAssigningScheduleId(schedule.id);
-                                       setSelectedClubId(schedule.club_id || '');
-                                       setSelectedSubgroupId(schedule.subgroup_id || '');
-                                     }}
-                                     className="flex items-center gap-1"
-                                   >
-                                     <Building2 className="h-3 w-3" />
-                                     Assign to Club
-                                   </Button>
-                                 </DialogTrigger>
-                                 <DialogContent>
-                                   <DialogHeader>
-                                     <DialogTitle>Assign Schedule to Club</DialogTitle>
-                                   </DialogHeader>
-                                   <div className="space-y-4">
-                                     <div className="flex items-center gap-2">
-                                       <Building2 className="h-4 w-4 text-blue-600" />
-                                       <div className="flex-1">
-                                         <label className="text-sm font-medium">Club</label>
-                                         <Select value={selectedClubId} onValueChange={setSelectedClubId}>
-                                           <SelectTrigger>
-                                             <SelectValue placeholder="Select a club" />
-                                           </SelectTrigger>
-                                           <SelectContent>
-                                             <SelectItem value="none">No Club Assignment</SelectItem>
-                                             {clubs.map((club) => (
-                                               <SelectItem key={club.id} value={club.id}>
-                                                 {club.name}
-                                               </SelectItem>
-                                             ))}
-                                           </SelectContent>
-                                         </Select>
-                                       </div>
+                             
+                             {/* Show assignment info or assign button */}
+                             {schedule.club_id ? (
+                               <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                                 <div className="flex flex-col text-xs">
+                                   <div className="flex items-center gap-1">
+                                     <Building2 className="h-3 w-3 text-blue-600" />
+                                     <span className="font-medium">{getClubName(schedule.club_id)}</span>
+                                   </div>
+                                   {schedule.subgroup_id && (
+                                     <div className="flex items-center gap-1 text-purple-600">
+                                       <UserPlus className="h-3 w-3" />
+                                       <span>{getSubgroupName(schedule.subgroup_id)}</span>
                                      </div>
-
-                                     {selectedClubId && selectedClubId !== "none" && (
+                                   )}
+                                 </div>
+                                 <Button
+                                   size="sm"
+                                   variant="ghost"
+                                   onClick={() => handleUnassignSchedule(schedule.id)}
+                                   className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                   title="Unassign from club"
+                                 >
+                                   <X className="h-3 w-3" />
+                                 </Button>
+                               </div>
+                             ) : (
+                               clubs.length > 0 && (
+                                 <Dialog>
+                                   <DialogTrigger asChild>
+                                     <Button
+                                       size="sm"
+                                       variant="outline"
+                                       onClick={() => {
+                                         setAssigningScheduleId(schedule.id);
+                                         setSelectedClubId('');
+                                         setSelectedSubgroupId('');
+                                       }}
+                                       className="flex items-center gap-1"
+                                     >
+                                       <Building2 className="h-3 w-3" />
+                                       Assign to Club
+                                     </Button>
+                                   </DialogTrigger>
+                                   <DialogContent>
+                                     <DialogHeader>
+                                       <DialogTitle>Assign Schedule to Club</DialogTitle>
+                                     </DialogHeader>
+                                     <div className="space-y-4">
                                        <div className="flex items-center gap-2">
-                                         <UserPlus className="h-4 w-4 text-purple-600" />
+                                         <Building2 className="h-4 w-4 text-blue-600" />
                                          <div className="flex-1">
-                                           <label className="text-sm font-medium">Subgroup (Optional)</label>
-                                           <Select 
-                                             value={selectedSubgroupId} 
-                                             onValueChange={setSelectedSubgroupId}
-                                             disabled={subgroups.length === 0}
-                                           >
+                                           <label className="text-sm font-medium">Club</label>
+                                           <Select value={selectedClubId} onValueChange={setSelectedClubId}>
                                              <SelectTrigger>
-                                               <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
+                                               <SelectValue placeholder="Select a club" />
                                              </SelectTrigger>
                                              <SelectContent>
-                                               <SelectItem value="none">No Subgroup Assignment</SelectItem>
-                                               {subgroups.map((subgroup) => (
-                                                 <SelectItem key={subgroup.id} value={subgroup.id}>
-                                                   {subgroup.name}
+                                               <SelectItem value="none">No Club Assignment</SelectItem>
+                                               {clubs.map((club) => (
+                                                 <SelectItem key={club.id} value={club.id}>
+                                                   {club.name}
                                                  </SelectItem>
                                                ))}
                                              </SelectContent>
                                            </Select>
                                          </div>
                                        </div>
-                                     )}
 
-                                     <div className="flex justify-end gap-2">
-                                       <Button variant="outline" onClick={() => setAssigningScheduleId(null)}>
-                                         Cancel
-                                       </Button>
-                                       <Button onClick={handleAssignSchedule}>
-                                         Assign Schedule
-                                       </Button>
+                                       {selectedClubId && selectedClubId !== "none" && (
+                                         <div className="flex items-center gap-2">
+                                           <UserPlus className="h-4 w-4 text-purple-600" />
+                                           <div className="flex-1">
+                                             <label className="text-sm font-medium">Subgroup (Optional)</label>
+                                             <Select 
+                                               value={selectedSubgroupId} 
+                                               onValueChange={setSelectedSubgroupId}
+                                               disabled={subgroups.length === 0}
+                                             >
+                                               <SelectTrigger>
+                                                 <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
+                                               </SelectTrigger>
+                                               <SelectContent>
+                                                 <SelectItem value="none">No Subgroup Assignment</SelectItem>
+                                                 {subgroups.map((subgroup) => (
+                                                   <SelectItem key={subgroup.id} value={subgroup.id}>
+                                                     {subgroup.name}
+                                                   </SelectItem>
+                                                 ))}
+                                               </SelectContent>
+                                             </Select>
+                                           </div>
+                                         </div>
+                                       )}
+
+                                       <div className="flex justify-end gap-2">
+                                         <Button variant="outline" onClick={() => setAssigningScheduleId(null)}>
+                                           Cancel
+                                         </Button>
+                                         <Button onClick={handleAssignSchedule}>
+                                           Assign Schedule
+                                         </Button>
+                                       </div>
                                      </div>
-                                   </div>
-                                 </DialogContent>
-                               </Dialog>
+                                   </DialogContent>
+                                 </Dialog>
+                               )
                              )}
+                             
                              <Button
                                size="sm"
                                variant="outline"
