@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import ImageUpload from '@/components/ImageUpload';
 import Navigation from '@/components/ui/navigation';
+import SubgroupManagement from '@/components/SubgroupManagement';
 import { useToast } from '@/hooks/use-toast';
 import { Users, MapPin, Settings, Plus, UserPlus, MessageSquare, HelpCircle, Copy, Check } from 'lucide-react';
 
@@ -460,9 +461,10 @@ const ClubManagement = () => {
         <div className="lg:col-span-3">
           {selectedClub && (
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="members">Members</TabsTrigger>
+                <TabsTrigger value="subgroups">Subgroups</TabsTrigger>
                 <TabsTrigger value="notices">Notice Board</TabsTrigger>
                 <TabsTrigger value="faqs">FAQs</TabsTrigger>
               </TabsList>
@@ -514,19 +516,31 @@ const ClubManagement = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Users className="h-5 w-5" />
-                      Club Members ({members.filter(m => m.status === 'approved').length})
+                      Club Members ({members.filter(m => m.status === 'approved').length + 1})
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
+                      {/* Show club owner first */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Club Owner</p>
+                          <p className="text-sm text-muted-foreground">
+                            Owner ID: {selectedClub.owner_id}
+                          </p>
+                        </div>
+                        <Badge variant="default">Owner</Badge>
+                      </div>
+                      
+                      {/* Show other approved members */}
                       {members.filter(m => m.status === 'approved').map((member) => (
                         <div key={member.id} className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">
-                              {member.profiles?.full_name || 'Unknown User'}
+                              Member ID: {member.user_id}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {member.profiles?.email}
+                              Joined: {new Date(member.joined_at).toLocaleDateString()}
                             </p>
                           </div>
                           <Badge variant="secondary">Member</Badge>
@@ -562,6 +576,13 @@ const ClubManagement = () => {
                     </CardContent>
                   </Card>
                 )}
+              </TabsContent>
+
+              <TabsContent value="subgroups" className="space-y-6">
+                <SubgroupManagement 
+                  clubId={selectedClub.id} 
+                  isOwner={isOwner || false} 
+                />
               </TabsContent>
 
               <TabsContent value="notices" className="space-y-6">
