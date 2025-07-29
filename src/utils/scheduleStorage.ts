@@ -88,6 +88,8 @@ export const getSavedSchedules = async (): Promise<SavedSchedule[]> => {
         name: profile?.full_name || user.email || 'Unknown User',
         email: profile?.email || user.email || '',
       },
+      club_id: schedule.club_id,
+      subgroup_id: schedule.subgroup_id,
     }));
   } catch (error) {
     console.error('Error loading saved schedules:', error);
