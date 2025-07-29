@@ -1,4 +1,4 @@
-// Global Optimized Pickleball Scheduler with Hard Opponent Gap Constraint
+// Global Optimized Pickleball Scheduler with Strict Fairness Constraints
 
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
@@ -20,7 +20,7 @@ class SeededRandom {
 
 interface PlayerStats {
   matchCount: number;
-  partnerships: Set<string>;
+  partnerships: Map<number, number>;
   opponents: Map<number, number>;
   courtsPlayed: Set<number>;
   sitOutRounds: Set<number>;
@@ -28,12 +28,11 @@ interface PlayerStats {
 
 const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: number): number => {
   const stats: Record<number, PlayerStats> = {};
-  const opponentCounts = new Map<string, number>();
 
   for (let i = 1; i <= numPlayers; i++) {
     stats[i] = {
       matchCount: 0,
-      partnerships: new Set(),
+      partnerships: new Map(),
       opponents: new Map(),
       courtsPlayed: new Set(),
       sitOutRounds: new Set()
@@ -49,18 +48,21 @@ const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: numb
       stats[id].courtsPlayed.add(match.court);
     }
 
-    stats[ids[0]].partnerships.add(`${ids[0]}-${ids[1]}`);
-    stats[ids[1]].partnerships.add(`${ids[0]}-${ids[1]}`);
-    stats[ids[2]].partnerships.add(`${ids[2]}-${ids[3]}`);
-    stats[ids[3]].partnerships.add(`${ids[2]}-${ids[3]}`);
+    const updateMap = (map: Map<number, number>, key: number) => {
+      map.set(key, (map.get(key) || 0) + 1);
+    };
 
+    // Partnerships
+    updateMap(stats[ids[0]].partnerships, ids[1]);
+    updateMap(stats[ids[1]].partnerships, ids[0]);
+    updateMap(stats[ids[2]].partnerships, ids[3]);
+    updateMap(stats[ids[3]].partnerships, ids[2]);
+
+    // Opponents
     for (const i of [0, 1]) {
       for (const j of [2, 3]) {
-        stats[ids[i]].opponents.set(ids[j], (stats[ids[i]].opponents.get(ids[j]) || 0) + 1);
-        stats[ids[j]].opponents.set(ids[i], (stats[ids[j]].opponents.get(ids[i]) || 0) + 1);
-
-        const key = ids[i] < ids[j] ? `${ids[i]}-${ids[j]}` : `${ids[j]}-${ids[i]}`;
-        opponentCounts.set(key, (opponentCounts.get(key) || 0) + 1);
+        updateMap(stats[ids[i]].opponents, ids[j]);
+        updateMap(stats[ids[j]].opponents, ids[i]);
       }
     }
 
@@ -75,23 +77,30 @@ const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: numb
     }
   }
 
-  // Opponent fairness hard constraint
-  const opponentFreqs = [...opponentCounts.values()];
-  const maxOpponent = Math.max(...opponentFreqs);
-  const minOpponent = Math.min(...opponentFreqs);
-  if (maxOpponent - minOpponent > 1) return Infinity;
+  // Strict fairness constraint: no player can partner with or face someone more than once above the min
+  for (const stat of Object.values(stats)) {
+    const partnerCounts = [...stat.partnerships.values()];
+    const opponentCounts = [...stat.opponents.values()];
 
-  let partnershipPenalty = 0;
-  let opponentPenalty = 0;
+    if (partnerCounts.length > 1) {
+      const max = Math.max(...partnerCounts);
+      const min = Math.min(...partnerCounts);
+      if (max - min > 1) return Infinity;
+    }
+
+    if (opponentCounts.length > 1) {
+      const max = Math.max(...opponentCounts);
+      const min = Math.min(...opponentCounts);
+      if (max - min > 1) return Infinity;
+    }
+  }
+
   let courtPenalty = 0;
   let sitOutPenalty = 0;
-
   const matchCounts = Object.values(stats).map(s => s.matchCount);
   const variance = Math.max(...matchCounts) - Math.min(...matchCounts);
 
   for (const s of Object.values(stats)) {
-    partnershipPenalty += s.partnerships.size;
-    opponentPenalty += s.opponents.size;
     courtPenalty += s.courtsPlayed.size;
 
     const sorted = [...s.sitOutRounds].sort((a, b) => a - b);
@@ -101,9 +110,7 @@ const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: numb
   }
 
   return (
-    -partnershipPenalty * 5 -
-    opponentPenalty * 3 -
-    courtPenalty * 1 -
+    -courtPenalty * 1 -
     sitOutPenalty * 50 +
     variance * 100
   );
@@ -152,11 +159,10 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
 
   let temp = 1000;
   const cooling = 0.995;
-  const steps = 20000;
+  const steps = 30000;
 
   for (let step = 0; step < steps; step++) {
     const next = [...current];
-
     const i = Math.floor(rng.next() * next.length);
     const j = Math.floor(rng.next() * next.length);
     const m1 = next[i];
