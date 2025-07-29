@@ -401,6 +401,7 @@ const ClubManagement = () => {
                   className="club-logo-upload"
                   onImageChange={(url) => setClubForm({ ...clubForm, logo_url: url })}
                   currentImageUrl={clubForm.logo_url}
+                  title="Club Logo"
                 />
               </div>
               <Button type="submit" className="w-full">Create Club</Button>
@@ -695,6 +696,7 @@ const ClubManagement = () => {
                 className="club-logo-upload"
                 onImageChange={(url) => setClubForm({ ...clubForm, logo_url: url })}
                 currentImageUrl={clubForm.logo_url}
+                title="Club Logo"
               />
             </div>
             <Button type="submit" className="w-full">Create Club</Button>

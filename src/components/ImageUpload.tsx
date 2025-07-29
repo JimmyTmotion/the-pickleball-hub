@@ -10,9 +10,10 @@ interface ImageUploadProps {
   currentImageUrl?: string;
   onImageChange: (imageUrl: string) => void;
   className?: string;
+  title?: string;
 }
 
-const ImageUpload = ({ currentImageUrl, onImageChange, className }: ImageUploadProps) => {
+const ImageUpload = ({ currentImageUrl, onImageChange, className, title = "Image" }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
 
@@ -152,7 +153,7 @@ const ImageUpload = ({ currentImageUrl, onImageChange, className }: ImageUploadP
 
   return (
     <div className={className}>
-      <Label className="text-sm font-medium">Event Thumbnail</Label>
+      <Label className="text-sm font-medium">{title}</Label>
       <div className="mt-2 space-y-3">
         {previewUrl ? (
           <div className="relative">
