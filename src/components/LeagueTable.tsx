@@ -8,9 +8,10 @@ import { Trophy, TrendingUp, TrendingDown } from 'lucide-react';
 interface LeagueTableProps {
   schedule: Schedule;
   title?: string;
+  compact?: boolean; // New prop for mobile optimization
 }
 
-const LeagueTable: React.FC<LeagueTableProps> = ({ schedule, title = "League Table" }) => {
+const LeagueTable: React.FC<LeagueTableProps> = ({ schedule, title = "League Table", compact = false }) => {
   const calculatePlayerStats = (): PlayerLeagueStats[] => {
     const statsMap = new Map<number, PlayerLeagueStats>();
 
@@ -107,6 +108,53 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ schedule, title = "League Tab
     );
   }
 
+  if (compact) {
+    // Mobile-optimized compact view
+    return (
+      <div className="space-y-2">
+        {playerStats.map((player, index) => (
+          <div key={player.playerId} className="bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm">#{index + 1}</span>
+                {index === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                <span className="font-medium text-sm">{player.playerName}</span>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {player.winPercentage.toFixed(1)}% wins
+              </Badge>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+              <div className="text-center">
+                <div className="font-medium">{player.matchesPlayed}</div>
+                <div>Played</div>
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-green-600">{player.wins}</div>
+                <div>Won</div>
+              </div>
+              <div className="text-center">
+                <div className="font-medium">{player.pointsFor}</div>
+                <div>Points</div>
+              </div>
+              <div className="text-center">
+                <div className={`font-medium flex items-center justify-center gap-1 ${
+                  player.pointsDifference > 0 ? 'text-green-600' : 
+                  player.pointsDifference < 0 ? 'text-red-600' : 'text-muted-foreground'
+                }`}>
+                  {player.pointsDifference > 0 && <TrendingUp className="h-3 w-3" />}
+                  {player.pointsDifference < 0 && <TrendingDown className="h-3 w-3" />}
+                  {player.pointsDifference > 0 ? '+' : ''}{player.pointsDifference}
+                </div>
+                <div>Diff</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -121,49 +169,51 @@ const LeagueTable: React.FC<LeagueTableProps> = ({ schedule, title = "League Tab
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>Player</TableHead>
-              <TableHead className="text-center">MP</TableHead>
-              <TableHead className="text-center">W</TableHead>
-              <TableHead className="text-center">L</TableHead>
-              <TableHead className="text-center">PF</TableHead>
-              <TableHead className="text-center">PA</TableHead>
-              <TableHead className="text-center">PD</TableHead>
-              <TableHead className="text-center">Win%</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {playerStats.map((player, index) => (
-              <TableRow key={player.playerId}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    {index + 1}
-                    {index === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
-                  </div>
-                </TableCell>
-                <TableCell className="font-medium">{player.playerName}</TableCell>
-                <TableCell className="text-center">{player.matchesPlayed}</TableCell>
-                <TableCell className="text-center">{player.wins}</TableCell>
-                <TableCell className="text-center">{player.losses}</TableCell>
-                <TableCell className="text-center">{player.pointsFor}</TableCell>
-                <TableCell className="text-center">{player.pointsAgainst}</TableCell>
-                <TableCell className="text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    {player.pointsDifference > 0 && <TrendingUp className="h-3 w-3 text-green-500" />}
-                    {player.pointsDifference < 0 && <TrendingDown className="h-3 w-3 text-red-500" />}
-                    {player.pointsDifference}
-                  </div>
-                </TableCell>
-                <TableCell className="text-center">
-                  {player.winPercentage.toFixed(1)}%
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table className="text-xs md:text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12 text-xs">#</TableHead>
+                <TableHead className="text-xs">Player</TableHead>
+                <TableHead className="text-center text-xs">MP</TableHead>
+                <TableHead className="text-center text-xs">W</TableHead>
+                <TableHead className="text-center text-xs">L</TableHead>
+                <TableHead className="text-center text-xs">PF</TableHead>
+                <TableHead className="text-center text-xs">PA</TableHead>
+                <TableHead className="text-center text-xs">PD</TableHead>
+                <TableHead className="text-center text-xs">Win%</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {playerStats.map((player, index) => (
+                <TableRow key={player.playerId}>
+                  <TableCell className="font-medium text-xs">
+                    <div className="flex items-center gap-1">
+                      {index + 1}
+                      {index === 0 && <Trophy className="h-3 w-3 text-yellow-500" />}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium text-xs">{player.playerName}</TableCell>
+                  <TableCell className="text-center text-xs">{player.matchesPlayed}</TableCell>
+                  <TableCell className="text-center text-xs">{player.wins}</TableCell>
+                  <TableCell className="text-center text-xs">{player.losses}</TableCell>
+                  <TableCell className="text-center text-xs">{player.pointsFor}</TableCell>
+                  <TableCell className="text-center text-xs">{player.pointsAgainst}</TableCell>
+                  <TableCell className="text-center text-xs">
+                    <div className="flex items-center justify-center gap-1">
+                      {player.pointsDifference > 0 && <TrendingUp className="h-3 w-3 text-green-500" />}
+                      {player.pointsDifference < 0 && <TrendingDown className="h-3 w-3 text-red-500" />}
+                      {player.pointsDifference}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center text-xs">
+                    {player.winPercentage.toFixed(1)}%
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );

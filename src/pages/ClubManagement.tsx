@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageUpload from '@/components/ImageUpload';
 import Navigation from '@/components/ui/navigation';
 import SubgroupManagement from '@/components/SubgroupManagement';
@@ -75,6 +76,7 @@ const ClubManagement = () => {
   const [schedules, setSchedules] = useState<SavedSchedule[]>([]);
   const [newNotice, setNewNotice] = useState({ title: '', content: '' });
   const [newFAQ, setNewFAQ] = useState({ question: '', answer: '' });
+  const [activeTab, setActiveTab] = useState('overview');
   const [clubForm, setClubForm] = useState({
     name: '',
     location_city: '',
@@ -643,6 +645,443 @@ const ClubManagement = () => {
     );
   }
 
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  {selectedClub?.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p>{selectedClub?.location_city}, {selectedClub?.location_county}</p>
+                  </div>
+                  
+                  {isOwner && (
+                    <div className="space-y-4">
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Auto-join link</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <Input 
+                              value={`${window.location.origin}/club/join/${selectedClub?.auto_join_token}`}
+                              readOnly
+                              className="text-xs md:text-sm"
+                            />
+                            <Button onClick={copyJoinLink} variant="outline" size="sm">
+                              {copiedToken ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'results':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Club Results ({schedules.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {schedules.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No schedules assigned to this club yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {schedules.map((schedule) => {
+                      const completedMatches = getCompletedMatchesCount(schedule);
+                      const allMatchesCompleted = areAllMatchesCompleted(schedule);
+                      const awards = getPlayerAwards(schedule);
+                      
+                      return (
+                        <Card key={schedule.id} className="border-l-4 border-l-primary">
+                          <CardHeader>
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="text-lg break-words">{schedule.name}</CardTitle>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Created by {schedule.createdBy.name} on {schedule.createdAt.toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {schedule.config.numRounds} rounds
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  {schedule.config.numPlayers} players
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  {schedule.config.numCourts} courts
+                                </Badge>
+                                {completedMatches > 0 && (
+                                  <Badge className="text-xs">
+                                    <Trophy className="h-3 w-3 mr-1" />
+                                    {completedMatches}/{schedule.schedule.matches.length} complete
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          
+                          <CardContent className="space-y-4">
+                            {completedMatches > 0 && (
+                              <Collapsible>
+                                <CollapsibleTrigger className="flex items-center gap-2 w-full hover:bg-muted/50 p-2 rounded transition-colors">
+                                  <Trophy className="h-4 w-4 text-yellow-500" />
+                                  <span className="font-medium">League Table & Results</span>
+                                  <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 data-[state=open]:rotate-180" />
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="space-y-4 mt-4">
+                                  {/* League Table - Mobile Optimized */}
+                                  <div className="space-y-3">
+                                    <h4 className="font-medium text-sm">League Table</h4>
+                                    <div className="block lg:hidden">
+                                      {/* Mobile compact view */}
+                                      <LeagueTable schedule={schedule.schedule} compact={true} />
+                                    </div>
+                                    <div className="hidden lg:block">
+                                      {/* Desktop full table */}
+                                      <LeagueTable schedule={schedule.schedule} />
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Player Awards */}
+                                  {allMatchesCompleted && awards && (
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium text-sm">Player Awards</h4>
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
+                                          <CardContent className="p-3 text-center">
+                                            <div className="text-lg mb-1">🏆</div>
+                                            <h5 className="font-medium text-yellow-700 text-xs">Top Scorer</h5>
+                                            <p className="text-sm font-bold">{awards.topScorer.playerName}</p>
+                                            <p className="text-xs text-muted-foreground">{awards.topScorer.pointsFor} points</p>
+                                          </CardContent>
+                                        </Card>
+                                        
+                                        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                                          <CardContent className="p-3 text-center">
+                                            <div className="text-lg mb-1">🛡️</div>
+                                            <h5 className="font-medium text-blue-700 text-xs">Best Defense</h5>
+                                            <p className="text-sm font-bold">{awards.bestDefensive.playerName}</p>
+                                            <p className="text-xs text-muted-foreground">{awards.bestDefensive.pointsAgainst} conceded</p>
+                                          </CardContent>
+                                        </Card>
+                                        
+                                        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                                          <CardContent className="p-3 text-center">
+                                            <div className="text-lg mb-1">📈</div>
+                                            <h5 className="font-medium text-green-700 text-xs">Most Consistent</h5>
+                                            <p className="text-sm font-bold">{awards.mostConsistent.playerName}</p>
+                                            <p className="text-xs text-muted-foreground">+{awards.mostConsistent.pointsDifference}</p>
+                                          </CardContent>
+                                        </Card>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Individual Match Results by Round */}
+                                  <div className="space-y-2">
+                                    <h4 className="font-medium text-sm">Match Results by Round</h4>
+                                    <div className="space-y-3">
+                                      {Array.from(new Set(schedule.schedule.matches.map(m => m.round))).sort().map(round => {
+                                        const roundMatches = schedule.schedule.matches.filter(m => m.round === round);
+                                        const completedRoundMatches = roundMatches.filter(m => m.result?.completed);
+                                        
+                                        return (
+                                          <div key={round} className="border rounded-lg p-3">
+                                            <h5 className="font-medium text-sm mb-2">
+                                              Round {round} ({completedRoundMatches.length}/{roundMatches.length} completed)
+                                            </h5>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                              {roundMatches.map(match => (
+                                                <div key={match.id} className="text-xs p-2 bg-muted/50 rounded">
+                                                  <div className="flex justify-between items-center">
+                                                    <span className="font-medium">Court {match.court}</span>
+                                                    {match.result?.completed ? (
+                                                      <Badge variant="secondary" className="text-xs">
+                                                        {match.result.team1Score} - {match.result.team2Score}
+                                                      </Badge>
+                                                    ) : (
+                                                      <Badge variant="outline" className="text-xs">
+                                                        Not played
+                                                      </Badge>
+                                                    )}
+                                                  </div>
+                                                  <div className="mt-1">
+                                                    <p>{match.players[0]?.name} & {match.players[1]?.name}</p>
+                                                    <p className="text-muted-foreground">vs</p>
+                                                    <p>{match.players[2]?.name} & {match.players[3]?.name}</p>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            )}
+                            
+                            {completedMatches === 0 && (
+                              <div className="text-center py-4 text-muted-foreground">
+                                <p className="text-sm">No matches completed yet. Check back when results are available!</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'members':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Club Members ({members.filter(m => m.status === 'approved').length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Show club owner first */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">
+                        {members.find(m => m.user_id === selectedClub?.owner_id)?.profiles?.full_name || 'Club Owner (No Name Set)'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {members.find(m => m.user_id === selectedClub?.owner_id)?.profiles?.email || 'Owner'}
+                      </p>
+                    </div>
+                    <Badge variant="default">Owner</Badge>
+                  </div>
+                  
+                  {/* Show other approved members */}
+                  <div className="space-y-4">
+                    {members.filter(m => m.status === 'approved' && m.user_id !== selectedClub?.owner_id).map((member) => (
+                      <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {member.profiles?.full_name || 'Unknown User'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Joined: {new Date(member.joined_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">Member</Badge>
+                          {isOwner && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => removeMember(member.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {isOwner && members.filter(m => m.status === 'pending').length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending Applications ({members.filter(m => m.status === 'pending').length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {members.filter(m => m.status === 'pending').map((member) => (
+                      <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {member.profiles?.full_name || 'Unknown User'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {member.profiles?.email}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Applied: {new Date(member.joined_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Button onClick={() => approveMember(member.id)} size="sm">
+                          Approve
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        );
+
+      case 'subgroups':
+        return (
+          <div className="space-y-6">
+            <SubgroupManagement 
+              clubId={selectedClub?.id || ''} 
+              isOwner={isOwner || false} 
+            />
+          </div>
+        );
+
+      case 'notices':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Notice Board
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={createNotice} className="space-y-4 mb-6">
+                  <Input
+                    placeholder="Notice title"
+                    value={newNotice.title}
+                    onChange={(e) => setNewNotice({ ...newNotice, title: e.target.value })}
+                    required
+                  />
+                  <Textarea
+                    placeholder="Notice content"
+                    value={newNotice.content}
+                    onChange={(e) => setNewNotice({ ...newNotice, content: e.target.value })}
+                    required
+                  />
+                  <Button type="submit">Post Notice</Button>
+                </form>
+                <Separator className="my-6" />
+
+                <div className="space-y-4">
+                  {notices.map((notice) => (
+                    <div key={notice.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium">{notice.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(notice.created_at).toLocaleDateString()}
+                          </p>
+                          {(notice.user_id === user?.id || isOwner) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteNotice(notice.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm mb-2">{notice.content}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Posted by: {notice.profiles?.full_name || 'Unknown User'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'faqs':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  Frequently Asked Questions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isOwner && (
+                  <>
+                    <form onSubmit={createFAQ} className="space-y-4 mb-6">
+                      <Input
+                        placeholder="Question"
+                        value={newFAQ.question}
+                        onChange={(e) => setNewFAQ({ ...newFAQ, question: e.target.value })}
+                        required
+                      />
+                      <Textarea
+                        placeholder="Answer"
+                        value={newFAQ.answer}
+                        onChange={(e) => setNewFAQ({ ...newFAQ, answer: e.target.value })}
+                        required
+                      />
+                      <Button type="submit">Add FAQ</Button>
+                    </form>
+                    <Separator className="my-6" />
+                  </>
+                )}
+
+                <div className="space-y-4">
+                  {faqs.map((faq) => (
+                    <div key={faq.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium">{faq.question}</h3>
+                        {isOwner && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteFAQ(faq.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{faq.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <Navigation />
@@ -670,7 +1109,7 @@ const ClubManagement = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <p className="text-sm text-muted-foreground">Select a club to manage</p>
                       <Button size="sm" onClick={() => setShowCreateForm(true)}>
                         <Plus className="mr-2 h-4 w-4" />
@@ -705,423 +1144,41 @@ const ClubManagement = () => {
             </Card>
 
             {selectedClub && (
-              <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto">
-                  <TabsTrigger value="overview" className="text-xs md:text-sm">Overview</TabsTrigger>
-                  <TabsTrigger value="schedules" className="text-xs md:text-sm">Schedules</TabsTrigger>
-                  <TabsTrigger value="members" className="text-xs md:text-sm">Members</TabsTrigger>
-                  <TabsTrigger value="subgroups" className="text-xs md:text-sm">Subgroups</TabsTrigger>
-                  <TabsTrigger value="notices" className="text-xs md:text-sm">Notices</TabsTrigger>
-                  <TabsTrigger value="faqs" className="text-xs md:text-sm">FAQs</TabsTrigger>
-                </TabsList>
+              <div className="w-full">
+                {/* Mobile/Tablet Dropdown - Hidden on large screens */}
+                <div className="lg:hidden mb-6">
+                  <Select value={activeTab} onValueChange={setActiveTab}>
+                    <SelectTrigger className="w-full bg-background border shadow-sm">
+                      <SelectValue placeholder="Select a section" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      <SelectItem value="overview">Overview</SelectItem>
+                      <SelectItem value="results">Results</SelectItem>
+                      <SelectItem value="members">Members</SelectItem>
+                      <SelectItem value="subgroups">Subgroups</SelectItem>
+                      <SelectItem value="notices">Notices</SelectItem>
+                      <SelectItem value="faqs">FAQs</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                <TabsContent value="overview" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5" />
-                        {selectedClub.name}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Location</p>
-                          <p>{selectedClub.location_city}, {selectedClub.location_county}</p>
-                        </div>
-                        
-                        {isOwner && (
-                          <div className="space-y-4">
-                            <Separator />
-                            <div>
-                              <p className="text-sm text-muted-foreground mb-2">Auto-join link</p>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <Input 
-                                  value={`${window.location.origin}/club/join/${selectedClub.auto_join_token}`}
-                                  readOnly
-                                  className="text-xs md:text-sm"
-                                />
-                                <Button onClick={copyJoinLink} variant="outline" size="sm">
-                                  {copiedToken ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                </Button>
-                              </div>
-                            </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                {/* Desktop Tabs - Hidden on mobile/tablet */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full hidden lg:block">
+                  <TabsList className="grid w-full grid-cols-6 h-auto">
+                    <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
+                    <TabsTrigger value="results" className="text-sm">Results</TabsTrigger>
+                    <TabsTrigger value="members" className="text-sm">Members</TabsTrigger>
+                    <TabsTrigger value="subgroups" className="text-sm">Subgroups</TabsTrigger>
+                    <TabsTrigger value="notices" className="text-sm">Notices</TabsTrigger>
+                    <TabsTrigger value="faqs" className="text-sm">FAQs</TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
-                <TabsContent value="schedules" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5" />
-                        Club Schedules ({schedules.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {schedules.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="text-muted-foreground">No schedules assigned to this club yet.</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-6">
-                          {schedules.map((schedule) => {
-                            const completedMatches = getCompletedMatchesCount(schedule);
-                            const allMatchesCompleted = areAllMatchesCompleted(schedule);
-                            const awards = getPlayerAwards(schedule);
-                            
-                            return (
-                              <Card key={schedule.id} className="border-l-4 border-l-primary">
-                                <CardHeader>
-                                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                                    <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-lg break-words">{schedule.name}</CardTitle>
-                                      <p className="text-sm text-muted-foreground mt-1">
-                                        Created by {schedule.createdBy.name} on {schedule.createdAt.toLocaleDateString()}
-                                      </p>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                      <Badge variant="outline" className="text-xs">
-                                        {schedule.config.numRounds} rounds
-                                      </Badge>
-                                      <Badge variant="outline" className="text-xs">
-                                        {schedule.config.numPlayers} players
-                                      </Badge>
-                                      <Badge variant="outline" className="text-xs">
-                                        {schedule.config.numCourts} courts
-                                      </Badge>
-                                      {completedMatches > 0 && (
-                                        <Badge className="text-xs">
-                                          <Trophy className="h-3 w-3 mr-1" />
-                                          {completedMatches}/{schedule.schedule.matches.length} complete
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                </CardHeader>
-                                
-                                <CardContent className="space-y-4">
-                                  {completedMatches > 0 && (
-                                    <Collapsible>
-                                      <CollapsibleTrigger className="flex items-center gap-2 w-full hover:bg-muted/50 p-2 rounded transition-colors">
-                                        <Trophy className="h-4 w-4 text-yellow-500" />
-                                        <span className="font-medium">League Table & Results</span>
-                                        <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 data-[state=open]:rotate-180" />
-                                      </CollapsibleTrigger>
-                                      <CollapsibleContent className="space-y-4 mt-4">
-                                        {/* League Table */}
-                                        <div className="space-y-2">
-                                          <h4 className="font-medium text-sm">League Table</h4>
-                                          <LeagueTable schedule={schedule.schedule} />
-                                        </div>
-                                        
-                                        {/* Player Awards */}
-                                        {allMatchesCompleted && awards && (
-                                          <div className="space-y-2">
-                                            <h4 className="font-medium text-sm">Player Awards</h4>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                              <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
-                                                <CardContent className="p-3 text-center">
-                                                  <div className="text-lg mb-1">🏆</div>
-                                                  <h5 className="font-medium text-yellow-700 text-xs">Top Scorer</h5>
-                                                  <p className="text-sm font-bold">{awards.topScorer.playerName}</p>
-                                                  <p className="text-xs text-muted-foreground">{awards.topScorer.pointsFor} points</p>
-                                                </CardContent>
-                                              </Card>
-                                              
-                                              <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
-                                                <CardContent className="p-3 text-center">
-                                                  <div className="text-lg mb-1">🛡️</div>
-                                                  <h5 className="font-medium text-blue-700 text-xs">Best Defense</h5>
-                                                  <p className="text-sm font-bold">{awards.bestDefensive.playerName}</p>
-                                                  <p className="text-xs text-muted-foreground">{awards.bestDefensive.pointsAgainst} conceded</p>
-                                                </CardContent>
-                                              </Card>
-                                              
-                                              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-                                                <CardContent className="p-3 text-center">
-                                                  <div className="text-lg mb-1">📈</div>
-                                                  <h5 className="font-medium text-green-700 text-xs">Most Consistent</h5>
-                                                  <p className="text-sm font-bold">{awards.mostConsistent.playerName}</p>
-                                                  <p className="text-xs text-muted-foreground">+{awards.mostConsistent.pointsDifference}</p>
-                                                </CardContent>
-                                              </Card>
-                                            </div>
-                                          </div>
-                                        )}
-                                        
-                                        {/* Individual Match Results by Round */}
-                                        <div className="space-y-2">
-                                          <h4 className="font-medium text-sm">Match Results by Round</h4>
-                                          <div className="space-y-3">
-                                            {Array.from(new Set(schedule.schedule.matches.map(m => m.round))).sort().map(round => {
-                                              const roundMatches = schedule.schedule.matches.filter(m => m.round === round);
-                                              const completedRoundMatches = roundMatches.filter(m => m.result?.completed);
-                                              
-                                              return (
-                                                <div key={round} className="border rounded-lg p-3">
-                                                  <h5 className="font-medium text-sm mb-2">
-                                                    Round {round} ({completedRoundMatches.length}/{roundMatches.length} completed)
-                                                  </h5>
-                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                    {roundMatches.map(match => (
-                                                      <div key={match.id} className="text-xs p-2 bg-muted/50 rounded">
-                                                        <div className="flex justify-between items-center">
-                                                          <span className="font-medium">Court {match.court}</span>
-                                                          {match.result?.completed ? (
-                                                            <Badge variant="secondary" className="text-xs">
-                                                              {match.result.team1Score} - {match.result.team2Score}
-                                                            </Badge>
-                                                          ) : (
-                                                            <Badge variant="outline" className="text-xs">
-                                                              Not played
-                                                            </Badge>
-                                                          )}
-                                                        </div>
-                                                        <div className="mt-1">
-                                                          <p>{match.players[0]?.name} & {match.players[1]?.name}</p>
-                                                          <p className="text-muted-foreground">vs</p>
-                                                          <p>{match.players[2]?.name} & {match.players[3]?.name}</p>
-                                                        </div>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
-                                        </div>
-                                      </CollapsibleContent>
-                                    </Collapsible>
-                                  )}
-                                  
-                                  {completedMatches === 0 && (
-                                    <div className="text-center py-4 text-muted-foreground">
-                                      <p className="text-sm">No matches completed yet. Check back when results are available!</p>
-                                    </div>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="members" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        Club Members ({members.filter(m => m.status === 'approved').length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {/* Show club owner first - get owner details from profiles */}
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">
-                              {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.full_name || 'Club Owner (No Name Set)'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.email || 'Owner'}
-                            </p>
-                          </div>
-                          <Badge variant="default">Owner</Badge>
-                        </div>
-                        
-                        {/* Show other approved members */}
-                        <div className="space-y-4">
-                          {members.filter(m => m.status === 'approved' && m.user_id !== selectedClub.owner_id).map((member) => (
-                            <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                              <div className="flex-1">
-                                <p className="font-medium">
-                                  {member.profiles?.full_name || 'Unknown User'}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  Joined: {new Date(member.joined_at).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="secondary">Member</Badge>
-                                {isOwner && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => removeMember(member.id)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {isOwner && members.filter(m => m.status === 'pending').length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Pending Applications ({members.filter(m => m.status === 'pending').length})</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {members.filter(m => m.status === 'pending').map((member) => (
-                            <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                              <div className="flex-1">
-                                <p className="font-medium">
-                                  {member.profiles?.full_name || 'Unknown User'}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {member.profiles?.email}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Applied: {new Date(member.joined_at).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <Button onClick={() => approveMember(member.id)} size="sm">
-                                Approve
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="subgroups" className="space-y-6">
-                  <SubgroupManagement 
-                    clubId={selectedClub.id} 
-                    isOwner={isOwner || false} 
-                  />
-                </TabsContent>
-
-                <TabsContent value="notices" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5" />
-                        Notice Board
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <form onSubmit={createNotice} className="space-y-4 mb-6">
-                        <Input
-                          placeholder="Notice title"
-                          value={newNotice.title}
-                          onChange={(e) => setNewNotice({ ...newNotice, title: e.target.value })}
-                          required
-                        />
-                        <Textarea
-                          placeholder="Notice content"
-                          value={newNotice.content}
-                          onChange={(e) => setNewNotice({ ...newNotice, content: e.target.value })}
-                          required
-                        />
-                        <Button type="submit">Post Notice</Button>
-                      </form>
-                      <Separator className="my-6" />
-
-                       <div className="space-y-4">
-                         {notices.map((notice) => (
-                           <div key={notice.id} className="border rounded-lg p-4">
-                             <div className="flex justify-between items-start mb-2">
-                               <h3 className="font-medium">{notice.title}</h3>
-                               <div className="flex items-center gap-2">
-                                 <p className="text-xs text-muted-foreground">
-                                   {new Date(notice.created_at).toLocaleDateString()}
-                                 </p>
-                                 {/* Show delete button for notice author or club owner */}
-                                 {(notice.user_id === user?.id || isOwner) && (
-                                   <Button
-                                     variant="ghost"
-                                     size="sm"
-                                     onClick={() => deleteNotice(notice.id)}
-                                     className="text-destructive hover:text-destructive"
-                                   >
-                                     <Trash2 className="h-4 w-4" />
-                                   </Button>
-                                 )}
-                               </div>
-                             </div>
-                             <p className="text-sm mb-2">{notice.content}</p>
-                             <p className="text-xs text-muted-foreground">
-                               Posted by: {notice.profiles?.full_name || 'Unknown User'}
-                             </p>
-                           </div>
-                         ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="faqs" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <HelpCircle className="h-5 w-5" />
-                        Frequently Asked Questions
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {isOwner && (
-                        <>
-                          <form onSubmit={createFAQ} className="space-y-4 mb-6">
-                            <Input
-                              placeholder="Question"
-                              value={newFAQ.question}
-                              onChange={(e) => setNewFAQ({ ...newFAQ, question: e.target.value })}
-                              required
-                            />
-                            <Textarea
-                              placeholder="Answer"
-                              value={newFAQ.answer}
-                              onChange={(e) => setNewFAQ({ ...newFAQ, answer: e.target.value })}
-                              required
-                            />
-                            <Button type="submit">Add FAQ</Button>
-                          </form>
-                          <Separator className="my-6" />
-                        </>
-                      )}
-
-                       <div className="space-y-4">
-                         {faqs.map((faq) => (
-                           <div key={faq.id} className="border rounded-lg p-4">
-                             <div className="flex justify-between items-start mb-2">
-                               <h3 className="font-medium">{faq.question}</h3>
-                               {/* Show delete button for club owners only */}
-                               {isOwner && (
-                                 <Button
-                                   variant="ghost"
-                                   size="sm"
-                                   onClick={() => deleteFAQ(faq.id)}
-                                   className="text-destructive hover:text-destructive"
-                                 >
-                                   <Trash2 className="h-4 w-4" />
-                                 </Button>
-                               )}
-                             </div>
-                             <p className="text-sm text-muted-foreground">{faq.answer}</p>
-                           </div>
-                         ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+                {/* Content sections */}
+                <div className="mt-6">
+                  {renderTabContent()}
+                </div>
+              </div>
             )}
           </div>
 
@@ -1188,7 +1245,7 @@ const ClubManagement = () => {
           </div>
         </div>
 
-        {/* Create Club Dialog */}
+        {/* Create Club Modal */}
         <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
           <DialogContent>
             <DialogHeader>
@@ -1205,7 +1262,7 @@ const ClubManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="city">City/Town</Label>
+                <Label htmlFor="city">City</Label>
                 <Input
                   id="city"
                   value={clubForm.location_city}
@@ -1223,15 +1280,19 @@ const ClubManagement = () => {
                 />
               </div>
               <div>
-                <Label>Club Logo</Label>
+                <Label>Club Logo (Optional)</Label>
                 <ImageUpload
-                  className="club-logo-upload"
-                  onImageChange={(url) => setClubForm({ ...clubForm, logo_url: url })}
-                  currentImageUrl={clubForm.logo_url}
-                  title="Club Logo"
+                  onImageUploaded={(url) => setClubForm({ ...clubForm, logo_url: url })}
+                  bucket="club-logos"
+                  existingImageUrl={clubForm.logo_url}
                 />
               </div>
-              <Button type="submit" className="w-full">Create Club</Button>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Create Club</Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
