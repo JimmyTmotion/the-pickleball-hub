@@ -396,7 +396,7 @@ const ClubManagement = () => {
                 />
               </div>
               <div>
-                <Label>Club Logo</Label>
+            
                 <ImageUpload
                   className="club-logo-upload"
                   onImageChange={(url) => setClubForm({ ...clubForm, logo_url: url })}
