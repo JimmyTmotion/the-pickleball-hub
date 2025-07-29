@@ -107,11 +107,12 @@ const ImageUpload = ({ currentImageUrl, onImageChange, className }: ImageUploadP
       // Generate unique filename
       const fileExt = 'jpg'; // We always convert to JPG
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `thumbnails/${fileName}`;
+      const filePath = `logos/${fileName}`;
 
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage - use club-logos bucket for clubs, event-thumbnails for events
+      const bucketName = className?.includes('club') ? 'club-logos' : 'event-thumbnails';
       const { data, error } = await supabase.storage
-        .from('event-thumbnails')
+        .from(bucketName)
         .upload(filePath, processedFile, {
           cacheControl: '3600',
           upsert: false
@@ -121,7 +122,7 @@ const ImageUpload = ({ currentImageUrl, onImageChange, className }: ImageUploadP
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('event-thumbnails')
+        .from(bucketName)
         .getPublicUrl(data.path);
 
       setPreviewUrl(publicUrl);

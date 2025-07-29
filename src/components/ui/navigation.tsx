@@ -45,6 +45,11 @@ const Navigation = () => {
             <Link to="/scheduler" className="text-gray-600 hover:text-primary transition-colors">
               Scheduler
             </Link>
+            {user && (
+              <Link to="/club" className="text-gray-600 hover:text-primary transition-colors">
+                My Club
+              </Link>
+            )}
             <button className="text-gray-400 cursor-not-allowed" disabled>
               Shop
             </button>
@@ -117,6 +122,15 @@ const Navigation = () => {
               >
                 Scheduler
               </Link>
+              {user && (
+                <Link 
+                  to="/club" 
+                  className="text-gray-600 hover:text-primary transition-colors py-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  My Club
+                </Link>
+              )}
               <button className="text-gray-400 cursor-not-allowed text-left py-2" disabled>
                 Shop
               </button>
