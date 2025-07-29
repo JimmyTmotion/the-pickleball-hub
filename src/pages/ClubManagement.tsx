@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import ImageUpload from '@/components/ImageUpload';
+import Navigation from '@/components/ui/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Users, MapPin, Settings, Plus, UserPlus, MessageSquare, HelpCircle, Copy, Check } from 'lucide-react';
 
@@ -89,6 +90,8 @@ const ClubManagement = () => {
     if (!user) return;
 
     try {
+      setLoading(true);
+      
       // Get clubs owned by user
       const { data: ownedClubs, error: ownedError } = await supabase
         .from('clubs')
@@ -97,22 +100,31 @@ const ClubManagement = () => {
 
       if (ownedError) throw ownedError;
 
-      // Get clubs user is a member of
-      const { data: memberClubs, error: memberError } = await supabase
+      // Get clubs user is a member of - simplified query to avoid recursion
+      const { data: memberData, error: memberError } = await supabase
         .from('club_members')
-        .select(`
-          clubs (
-            id, name, location_city, location_county, logo_url, owner_id, auto_join_token, created_at
-          )
-        `)
+        .select('club_id')
         .eq('user_id', user.id)
         .eq('status', 'approved');
 
       if (memberError) throw memberError;
 
+      // Get club details for member clubs
+      let memberClubs: Club[] = [];
+      if (memberData && memberData.length > 0) {
+        const clubIds = memberData.map(m => m.club_id);
+        const { data: clubsData, error: clubsError } = await supabase
+          .from('clubs')
+          .select('*')
+          .in('id', clubIds);
+
+        if (clubsError) throw clubsError;
+        memberClubs = clubsData || [];
+      }
+
       const allClubs = [
         ...(ownedClubs || []),
-        ...(memberClubs?.map(m => m.clubs).filter(Boolean) || [])
+        ...memberClubs
       ];
 
       // Remove duplicates
@@ -128,7 +140,7 @@ const ClubManagement = () => {
       console.error('Error fetching clubs:', error);
       toast({
         title: "Error",
-        description: "Failed to load clubs",
+        description: "Failed to load clubs. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -328,12 +340,19 @@ const ClubManagement = () => {
   const isOwner = selectedClub && user && selectedClub.owner_id === user.id;
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return (
+      <>
+        <Navigation />
+        <div className="flex justify-center items-center h-64">Loading...</div>
+      </>
+    );
   }
 
   if (clubs.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <>
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Manage Your Club</h1>
           <p className="text-muted-foreground mb-8">Create or join a club to get started</p>
@@ -388,12 +407,15 @@ const ClubManagement = () => {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
+      <Navigation />
+      <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Club Management</h1>
         <Button onClick={() => setShowCreateForm(true)}>
@@ -679,7 +701,8 @@ const ClubManagement = () => {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 
