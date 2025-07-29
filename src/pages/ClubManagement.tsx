@@ -43,6 +43,7 @@ interface Notice {
   title: string;
   content: string;
   created_at: string;
+  user_id: string;
   profiles?: {
     full_name?: string;
   };
@@ -613,20 +614,26 @@ const ClubManagement = () => {
                     <Separator className="my-6" />
 
                     <div className="space-y-4">
-                      {notices.map((notice) => (
-                        <div key={notice.id} className="border rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-medium">{notice.title}</h3>
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(notice.created_at).toLocaleDateString()}
-                            </span>
+                      {notices.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-8">
+                          No notices posted yet. Be the first to post a notice!
+                        </p>
+                      ) : (
+                        notices.map((notice) => (
+                          <div key={notice.id} className="border rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <h3 className="font-medium">{notice.title}</h3>
+                              <span className="text-sm text-muted-foreground">
+                                {new Date(notice.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="text-sm mb-2">{notice.content}</p>
+                            <p className="text-xs text-muted-foreground">
+                              By User ID: {notice.user_id || 'Unknown User'}
+                            </p>
                           </div>
-                          <p className="text-sm mb-2">{notice.content}</p>
-                          <p className="text-xs text-muted-foreground">
-                            By {notice.profiles?.full_name || 'Unknown User'}
-                          </p>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </CardContent>
                 </Card>
