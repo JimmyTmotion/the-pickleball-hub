@@ -1,4 +1,4 @@
-// Global Optimized Pickleball Scheduler with Progressive Fairness Enforcement
+// Global Optimized Pickleball Scheduler with Weighted Varied Opponent/Partner Support
 
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
@@ -26,7 +26,7 @@ interface PlayerStats {
   sitOutRounds: Set<number>;
 }
 
-const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: number): number => {
+const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: number, prioritizeOpposition: boolean): number => {
   const stats: Record<number, PlayerStats> = {};
 
   for (let i = 1; i <= numPlayers; i++) {
@@ -52,13 +52,11 @@ const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: numb
       map.set(key, (map.get(key) || 0) + 1);
     };
 
-    // Partnerships
     updateMap(stats[ids[0]].partnerships, ids[1]);
     updateMap(stats[ids[1]].partnerships, ids[0]);
     updateMap(stats[ids[2]].partnerships, ids[3]);
     updateMap(stats[ids[3]].partnerships, ids[2]);
 
-    // Opponents
     for (const i of [0, 1]) {
       for (const j of [2, 3]) {
         updateMap(stats[ids[i]].opponents, ids[j]);
@@ -77,29 +75,15 @@ const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: numb
     }
   }
 
-  // Progressive fairness constraint for partnerships and opponents
-  for (const [id, stat] of Object.entries(stats)) {
-    const partnerCounts = Array.from(stat.partnerships.values());
-    const opponentCounts = Array.from(stat.opponents.values());
-
-    const partnerMin = partnerCounts.length < numPlayers - 1 ? 0 : Math.min(...partnerCounts);
-    const opponentMin = opponentCounts.length < numPlayers - 1 ? 0 : Math.min(...opponentCounts);
-
-    for (const count of partnerCounts) {
-      if (count > partnerMin + 1) return Infinity;
-    }
-
-    for (const count of opponentCounts) {
-      if (count > opponentMin + 1) return Infinity;
-    }
-  }
-
+  // Score logic: reward diversity in partnerships and opposition
+  let variedPartners = 0;
+  let variedOpponents = 0;
   let courtPenalty = 0;
   let sitOutPenalty = 0;
-  const matchCounts = Object.values(stats).map(s => s.matchCount);
-  const variance = Math.max(...matchCounts) - Math.min(...matchCounts);
 
   for (const s of Object.values(stats)) {
+    variedPartners += s.partnerships.size;
+    variedOpponents += s.opponents.size;
     courtPenalty += s.courtsPlayed.size;
 
     const sorted = [...s.sitOutRounds].sort((a, b) => a - b);
@@ -108,15 +92,20 @@ const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: numb
     }
   }
 
+  const matchCounts = Object.values(stats).map(s => s.matchCount);
+  const variance = Math.max(...matchCounts) - Math.min(...matchCounts);
+
   return (
-    -courtPenalty * 1 -
+    -variedPartners * (prioritizeOpposition ? 2 : 5) -
+    -variedOpponents * (prioritizeOpposition ? 5 : 2) -
+    courtPenalty * 1 -
     sitOutPenalty * 50 +
     variance * 100
   );
 };
 
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
-  const { numRounds, numPlayers, numCourts, playerNames, randomSeed } = config;
+  const { numRounds, numPlayers, numCourts, playerNames, randomSeed, prioritizeUniquePartnerships, prioritizeVariedOpposition } = config;
   const rng = new SeededRandom(randomSeed || Date.now());
 
   const players: Player[] = Array.from({ length: numPlayers }, (_, i) => ({
@@ -152,7 +141,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   };
 
   let current = generateInitialSchedule();
-  let currentScore = getScheduleScore(current, numRounds, numPlayers);
+  let currentScore = getScheduleScore(current, numRounds, numPlayers, prioritizeVariedOpposition);
   let best = [...current];
   let bestScore = currentScore;
 
@@ -173,10 +162,10 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     m1.players[pi] = m2.players[pj];
     m2.players[pj] = tempPlayer;
 
-    const score = getScheduleScore(next, numRounds, numPlayers);
+    const score = getScheduleScore(next, numRounds, numPlayers, prioritizeVariedOpposition);
     const delta = score - currentScore;
 
-    if (score !== Infinity && (delta < 0 || Math.exp(-delta / temp) > rng.next())) {
+    if (delta < 0 || Math.exp(-delta / temp) > rng.next()) {
       current = next;
       currentScore = score;
       if (score < bestScore) {
@@ -205,7 +194,6 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
 
   return { matches: best, playerStats, roundSittingOut };
 };
-
 
 export const exportScheduleToCSV = (schedule: Schedule): string => {
   const csvContent = [
