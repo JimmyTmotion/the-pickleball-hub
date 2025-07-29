@@ -154,19 +154,30 @@ const ClubManagement = () => {
     if (!selectedClub) return;
 
     try {
-      // Fetch members
+      // Fetch members with profile information
       const { data: membersData, error: membersError } = await supabase
         .from('club_members')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            email
+          )
+        `)
         .eq('club_id', selectedClub.id);
 
       if (membersError) throw membersError;
       setMembers((membersData || []) as ClubMember[]);
 
-      // Fetch notices
+      // Fetch notices with profile information
       const { data: noticesData, error: noticesError } = await supabase
         .from('club_notices')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            full_name
+          )
+        `)
         .eq('club_id', selectedClub.id)
         .order('created_at', { ascending: false });
 
@@ -525,20 +536,22 @@ const ClubManagement = () => {
                       {/* Show club owner first */}
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Club Owner</p>
+                          <p className="font-medium">
+                            {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.full_name || 'Club Owner'}
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            Owner ID: {selectedClub.owner_id}
+                            {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.email || 'Owner'}
                           </p>
                         </div>
                         <Badge variant="default">Owner</Badge>
                       </div>
                       
                       {/* Show other approved members */}
-                      {members.filter(m => m.status === 'approved').map((member) => (
+                      {members.filter(m => m.status === 'approved' && m.user_id !== selectedClub.owner_id).map((member) => (
                         <div key={member.id} className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">
-                              Member ID: {member.user_id}
+                              {member.profiles?.full_name || 'Unknown User'}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               Joined: {new Date(member.joined_at).toLocaleDateString()}
@@ -629,7 +642,7 @@ const ClubManagement = () => {
                             </div>
                             <p className="text-sm mb-2">{notice.content}</p>
                             <p className="text-xs text-muted-foreground">
-                              By User ID: {notice.user_id || 'Unknown User'}
+                              By: {notice.profiles?.full_name || 'Unknown User'}
                             </p>
                           </div>
                         ))
