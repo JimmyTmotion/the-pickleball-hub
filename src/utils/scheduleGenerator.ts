@@ -206,3 +206,19 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
 
   return { matches: best, playerStats, roundSittingOut };
 };
+
+export const exportScheduleToCSV = (schedule: Schedule): string => {
+  const csvContent = [
+    ['Round', 'Court', 'Team 1 Player 1', 'Team 1 Player 2', 'Team 2 Player 1', 'Team 2 Player 2'],
+    ...schedule.matches.map(match => [
+      match.round.toString(),
+      match.court.toString(),
+      match.players[0].name,
+      match.players[1].name,
+      match.players[2].name,
+      match.players[3].name
+    ])
+  ].map(row => row.join(',')).join('\n');
+
+  return csvContent;
+};
