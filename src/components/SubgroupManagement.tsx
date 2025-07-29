@@ -477,9 +477,9 @@ const SubgroupCard = ({ subgroup, isOwner, onDelete, fetchSubgroupMembers }: Sub
             ) : (
               members.map((member) => (
                 <div key={member.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                  <span className="text-sm">
-                    Member ID: {member.user_id}
-                  </span>
+                   <span className="text-sm">
+                     {member.profiles?.full_name || member.profiles?.email || 'Unknown User'}
+                   </span>
                   {isOwner && (
                     <Button
                       variant="ghost"

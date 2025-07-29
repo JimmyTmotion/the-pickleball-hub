@@ -177,6 +177,13 @@ export type Database = {
             referencedRelation: "club_subgroups"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "club_subgroup_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       club_subgroups: {
