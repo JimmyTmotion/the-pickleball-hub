@@ -66,7 +66,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
   // Fetch subgroups when a club is selected
   useEffect(() => {
     const fetchSubgroups = async () => {
-      if (!selectedClubId) {
+      if (!selectedClubId || selectedClubId === "none") {
         setSubgroups([]);
         setSelectedSubgroupId('');
         return;
@@ -109,8 +109,8 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
     onGenerateSchedule(
       configWithNames, 
       scheduleName.trim() || undefined,
-      selectedClubId || undefined,
-      selectedSubgroupId || undefined
+      selectedClubId && selectedClubId !== "none" ? selectedClubId : undefined,
+      selectedSubgroupId && selectedSubgroupId !== "none" ? selectedSubgroupId : undefined
     );
   };
 
@@ -157,7 +157,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                         <SelectValue placeholder="Select a club to assign this schedule" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No Club Assignment</SelectItem>
+                        <SelectItem value="none">No Club Assignment</SelectItem>
                         {clubs.map((club) => (
                           <SelectItem key={club.id} value={club.id}>
                             {club.name}
@@ -169,7 +169,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                 </div>
 
                 {/* Subgroup Selection - Only show if a club is selected */}
-                {selectedClubId && (
+                {selectedClubId && selectedClubId !== "none" && (
                   <div className="flex items-center gap-2">
                     <UserPlus className="h-4 w-4 text-purple-600" />
                     <div className="flex-1">
@@ -181,7 +181,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                           <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No Subgroup Assignment</SelectItem>
+                          <SelectItem value="none">No Subgroup Assignment</SelectItem>
                           {subgroups.map((subgroup) => (
                             <SelectItem key={subgroup.id} value={subgroup.id}>
                               {subgroup.name}
