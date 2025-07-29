@@ -553,7 +553,7 @@ const ClubManagement = () => {
   const copyJoinLink = async () => {
     if (!selectedClub) return;
 
-    const joinLink = `${window.location.origin}/club/join/${selectedClub.auto_join_token}`;
+    const joinLink = `https://thepickleballhub.co.uk/club/join/${selectedClub.auto_join_token}`;
     
     try {
       await navigator.clipboard.writeText(joinLink);
@@ -682,7 +682,7 @@ const ClubManagement = () => {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <Input 
-                              value={`${window.location.origin}/club/join/${selectedClub?.auto_join_token}`}
+                              value={`https://thepickleballhub.co.uk/club/join/${selectedClub?.auto_join_token}`}
                               readOnly
                               className="text-xs md:text-sm"
                             />

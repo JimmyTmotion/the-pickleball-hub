@@ -175,7 +175,7 @@ export default function ClubJoin() {
                 </div>
               )}
               <Button 
-                onClick={() => navigate('/auth')} 
+                onClick={() => navigate(`/auth?redirectTo=${encodeURIComponent(`/club/join/${token}`)}`)} 
                 className="w-full"
               >
                 Sign In to Join Club

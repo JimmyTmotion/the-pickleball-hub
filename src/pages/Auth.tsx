@@ -21,7 +21,14 @@ const Auth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/');
+        // Check if we came from a club join link and redirect back there
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirectTo');
+        if (redirectTo) {
+          navigate(redirectTo);
+        } else {
+          navigate('/');
+        }
       }
     };
     checkUser();
@@ -75,7 +82,14 @@ const Auth = () => {
         });
         if (error) throw error;
         
-        navigate('/');
+        // Check if we need to redirect back to a club join link
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirectTo');
+        if (redirectTo) {
+          navigate(redirectTo);
+        } else {
+          navigate('/');
+        }
       }
     } catch (error: any) {
       toast({
