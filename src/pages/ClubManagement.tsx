@@ -14,7 +14,7 @@ import ImageUpload from '@/components/ImageUpload';
 import Navigation from '@/components/ui/navigation';
 import SubgroupManagement from '@/components/SubgroupManagement';
 import { useToast } from '@/hooks/use-toast';
-import { Users, MapPin, Settings, Plus, UserPlus, MessageSquare, HelpCircle, Copy, Check, X } from 'lucide-react';
+import { Users, MapPin, Settings, Plus, UserPlus, MessageSquare, HelpCircle, Copy, Check, X, Trash2 } from 'lucide-react';
 
 interface Club {
   id: string;
@@ -436,6 +436,64 @@ const ClubManagement = () => {
     }
   };
 
+  const deleteNotice = async (noticeId: string) => {
+    if (!confirm('Are you sure you want to delete this notice?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('club_notices')
+        .delete()
+        .eq('id', noticeId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Notice deleted successfully!"
+      });
+
+      fetchClubData();
+    } catch (error) {
+      console.error('Error deleting notice:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete notice",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteFAQ = async (faqId: string) => {
+    if (!confirm('Are you sure you want to delete this FAQ?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('club_faqs')
+        .delete()
+        .eq('id', faqId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "FAQ deleted successfully!"
+      });
+
+      fetchClubData();
+    } catch (error) {
+      console.error('Error deleting FAQ:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete FAQ",
+        variant: "destructive"
+      });
+    }
+  };
+
   const copyJoinLink = async () => {
     if (!selectedClub) return;
 
@@ -695,21 +753,34 @@ const ClubManagement = () => {
                       </form>
                       <Separator className="my-6" />
 
-                      <div className="space-y-4">
-                        {notices.map((notice) => (
-                          <div key={notice.id} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-medium">{notice.title}</h3>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(notice.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <p className="text-sm mb-2">{notice.content}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Posted by: {notice.profiles?.full_name || 'Unknown User'}
-                            </p>
-                          </div>
-                        ))}
+                       <div className="space-y-4">
+                         {notices.map((notice) => (
+                           <div key={notice.id} className="border rounded-lg p-4">
+                             <div className="flex justify-between items-start mb-2">
+                               <h3 className="font-medium">{notice.title}</h3>
+                               <div className="flex items-center gap-2">
+                                 <p className="text-xs text-muted-foreground">
+                                   {new Date(notice.created_at).toLocaleDateString()}
+                                 </p>
+                                 {/* Show delete button for notice author or club owner */}
+                                 {(notice.user_id === user?.id || isOwner) && (
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     onClick={() => deleteNotice(notice.id)}
+                                     className="text-destructive hover:text-destructive"
+                                   >
+                                     <Trash2 className="h-4 w-4" />
+                                   </Button>
+                                 )}
+                               </div>
+                             </div>
+                             <p className="text-sm mb-2">{notice.content}</p>
+                             <p className="text-xs text-muted-foreground">
+                               Posted by: {notice.profiles?.full_name || 'Unknown User'}
+                             </p>
+                           </div>
+                         ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -745,13 +816,26 @@ const ClubManagement = () => {
                         </>
                       )}
 
-                      <div className="space-y-4">
-                        {faqs.map((faq) => (
-                          <div key={faq.id} className="border rounded-lg p-4">
-                            <h3 className="font-medium mb-2">{faq.question}</h3>
-                            <p className="text-sm text-muted-foreground">{faq.answer}</p>
-                          </div>
-                        ))}
+                       <div className="space-y-4">
+                         {faqs.map((faq) => (
+                           <div key={faq.id} className="border rounded-lg p-4">
+                             <div className="flex justify-between items-start mb-2">
+                               <h3 className="font-medium">{faq.question}</h3>
+                               {/* Show delete button for club owners only */}
+                               {isOwner && (
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   onClick={() => deleteFAQ(faq.id)}
+                                   className="text-destructive hover:text-destructive"
+                                 >
+                                   <Trash2 className="h-4 w-4" />
+                                 </Button>
+                               )}
+                             </div>
+                             <p className="text-sm text-muted-foreground">{faq.answer}</p>
+                           </div>
+                         ))}
                       </div>
                     </CardContent>
                   </Card>
