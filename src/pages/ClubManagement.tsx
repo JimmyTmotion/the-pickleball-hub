@@ -1282,9 +1282,8 @@ const ClubManagement = () => {
               <div>
                 <Label>Club Logo (Optional)</Label>
                 <ImageUpload
-                  onImageUploaded={(url) => setClubForm({ ...clubForm, logo_url: url })}
-                  bucket="club-logos"
-                  existingImageUrl={clubForm.logo_url}
+                  onImageChange={(url) => setClubForm({ ...clubForm, logo_url: url })}
+                  currentImageUrl={clubForm.logo_url}
                 />
               </div>
               <div className="flex justify-end gap-2">
