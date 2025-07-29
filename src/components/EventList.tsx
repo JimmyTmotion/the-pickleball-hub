@@ -72,6 +72,8 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
         ratingRequired: event.rating_required || undefined,
         indoor: event.indoor_outdoor,
         additionalInfo: event.additional_info || undefined,
+        location: event.location || undefined,
+        eventLink: event.event_link || undefined,
         createdBy: event.created_by || undefined,
         createdAt: event.created_at,
         updatedAt: event.updated_at,
@@ -263,10 +265,10 @@ const EventList = ({ refreshTrigger }: EventListProps) => {
                       </div>
                     )}
 
-                    {event.indoor !== undefined && (
+                    {event.location && (
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        <span>{event.indoor ? 'Indoor' : 'Outdoor'}</span>
+                        <span>{event.location}</span>
                       </div>
                     )}
                   </div>

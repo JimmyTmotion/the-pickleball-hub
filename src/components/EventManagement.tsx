@@ -64,6 +64,8 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
         ratingRequired: event.rating_required || undefined,
         indoor: event.indoor_outdoor,
         additionalInfo: event.additional_info || undefined,
+        location: event.location || undefined,
+        eventLink: event.event_link || undefined,
         createdBy: event.created_by || undefined,
         createdAt: event.created_at,
         updatedAt: event.updated_at,
@@ -96,7 +98,9 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
       ratingRequired: event.ratingRequired || '',
       indoor: event.indoor || false,
       additionalInfo: event.additionalInfo || '',
-      thumbnail: event.thumbnail || ''
+      thumbnail: event.thumbnail || '',
+      location: event.location || '',
+      eventLink: event.eventLink || ''
     });
   };
 
@@ -138,6 +142,8 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
           indoor_outdoor: editFormData.indoor,
           additional_info: editFormData.additionalInfo || null,
           thumbnail: editFormData.thumbnail || null,
+          location: editFormData.location || null,
+          event_link: editFormData.eventLink || null,
         })
         .eq('id', editingEvent.id);
 
@@ -382,6 +388,16 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
                           </div>
 
                           <div>
+                            <Label htmlFor="edit-location">Location</Label>
+                            <Input
+                              id="edit-location"
+                              placeholder="e.g., Downtown Community Center"
+                              value={editFormData.location || ''}
+                              onChange={(e) => setEditFormData((prev: any) => ({ ...prev, location: e.target.value }))}
+                            />
+                          </div>
+
+                          <div>
                             <Label htmlFor="edit-eventType">Event Type *</Label>
                             <Select 
                               value={editFormData.eventType || ''} 
@@ -431,6 +447,17 @@ const EventManagement = ({ onEventUpdated }: EventManagementProps) => {
                                 onChange={(e) => setEditFormData((prev: any) => ({ ...prev, ratingRequired: e.target.value }))}
                               />
                             </div>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="edit-eventLink">Event Link</Label>
+                            <Input
+                              id="edit-eventLink"
+                              type="url"
+                              placeholder="https://example.com/event-registration"
+                              value={editFormData.eventLink || ''}
+                              onChange={(e) => setEditFormData((prev: any) => ({ ...prev, eventLink: e.target.value }))}
+                            />
                           </div>
 
                           <div>

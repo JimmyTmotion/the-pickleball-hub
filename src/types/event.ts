@@ -18,6 +18,8 @@ export interface Event {
   ratingRequired?: string;
   indoor?: boolean;
   additionalInfo?: string;
+  location?: string;
+  eventLink?: string;
   
   // Metadata
   createdBy: string;

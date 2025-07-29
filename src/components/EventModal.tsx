@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, MapPin, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { CalendarDays, MapPin, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Event, EventType } from '@/types/event';
 import { getDefaultThumbnail } from '@/utils/defaultThumbnail';
 
@@ -108,27 +108,42 @@ const EventModal = ({ event, events, isOpen, onClose, onNavigate }: EventModalPr
                 </div>
               )}
 
-              {event.indoor !== undefined && (
+              {event.location && (
                 <div className="flex items-center gap-3">
                   <MapPin className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Location Type</p>
-                    <p className="text-muted-foreground">{event.indoor ? 'Indoor' : 'Outdoor'}</p>
+                    <p className="font-medium">Location</p>
+                    <p className="text-muted-foreground">{event.location}</p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Match Types */}
-            {event.matchTypes.length > 0 && (
+            {/* Match Types and Indoor/Outdoor */}
+            {(event.matchTypes.length > 0 || event.indoor !== undefined) && (
               <div>
-                <p className="font-medium mb-2">Match Types</p>
-                <div className="flex flex-wrap gap-2">
-                  {event.matchTypes.map(type => (
-                    <Badge key={type} variant="outline">
-                      {type}
-                    </Badge>
-                  ))}
+                <p className="font-medium mb-2">Match Information</p>
+                <div className="space-y-2">
+                  {event.matchTypes.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Match Types</p>
+                      <div className="flex flex-wrap gap-2">
+                        {event.matchTypes.map(type => (
+                          <Badge key={type} variant="outline">
+                            {type}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {event.indoor !== undefined && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Venue Type</p>
+                      <Badge variant="secondary">
+                        {event.indoor ? 'Indoor' : 'Outdoor'}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -146,6 +161,24 @@ const EventModal = ({ event, events, isOpen, onClose, onNavigate }: EventModalPr
               <div>
                 <p className="font-medium">Rating Required</p>
                 <p className="text-muted-foreground">{event.ratingRequired}</p>
+              </div>
+            )}
+
+            {/* Event Link */}
+            {event.eventLink && (
+              <div>
+                <p className="font-medium mb-2">Event Registration</p>
+                <Button asChild className="w-full">
+                  <a 
+                    href={event.eventLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Register for Event
+                  </a>
+                </Button>
               </div>
             )}
 
