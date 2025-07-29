@@ -450,10 +450,9 @@ const ClubManagement = () => {
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8 text-center">Club Management</h1>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Manage Your Club */}
-          <div className="space-y-6">
-            <Card>
+        {/* Full Width - Manage Your Club Section */}
+        <div className="space-y-6 max-w-4xl mx-auto">
+          <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
@@ -730,65 +729,6 @@ const ClubManagement = () => {
                 </TabsContent>
               </Tabs>
             )}
-          </div>
-
-          {/* Right Column - Join a Club */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5" />
-                  Join a Club
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {availableClubs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No clubs available to join at the moment</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Apply to join a club below. Your application will need to be approved by the club owner.
-                    </p>
-                    
-                    {availableClubs.map((club) => (
-                      <div key={club.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              {club.logo_url && (
-                                <img 
-                                  src={club.logo_url} 
-                                  alt="Club logo" 
-                                  className="w-10 h-10 object-cover rounded"
-                                />
-                              )}
-                              <div>
-                                <h3 className="font-medium">{club.name}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {club.location_city}, {club.location_county}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                           {userApplications.has(club.id) ? (
-                             <Badge variant="outline" className="text-xs">
-                               Application pending
-                             </Badge>
-                           ) : (
-                             <Button onClick={() => applyToJoinClub(club.id)} size="sm">
-                               Apply to Join
-                             </Button>
-                           )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
         </div>
 
         {/* Create Club Dialog */}
