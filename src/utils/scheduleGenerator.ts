@@ -43,10 +43,28 @@ interface MatchCandidate {
   score: number;
 }
 
+// Modular scoring weights for easier tuning
+interface ScoringWeights {
+  balance: number;
+  mustPlay: number;
+  partnership: number;
+  opposition: number;
+  court: number;
+}
+
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
   const { numRounds, numPlayers, numCourts, playerNames, randomSeed, prioritizeUniquePartnerships, avoidConsecutiveSittingOut, balanceMatchCounts } = config;
   
   const rng = new SeededRandom(randomSeed || Date.now());
+  
+  // Configurable scoring weights
+  const weights: ScoringWeights = {
+    balance: 1.0,
+    mustPlay: 2.0,
+    partnership: 0.8,
+    opposition: 0.6,
+    court: 0.4
+  };
   
   // Initialize player states
   const playerStates: Map<number, PlayerState> = new Map();
@@ -73,16 +91,10 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   const matches: Match[] = [];
   const roundSittingOut: Record<number, Player[]> = {};
 
-  // Priority 1: Equal games & no consecutive sitting out
+  // Priority 1: Enhanced sitting out rule enforcement
   const canPlayerPlay = (playerId: number, round: number): boolean => {
     const state = playerStates.get(playerId)!;
-    
-    // Don't sit out 2 rounds in a row (unless unavoidable) - only if enabled
-    if (avoidConsecutiveSittingOut !== false && state.lastPlayedRound === round - 2) {
-      return true; // Must play to avoid sitting out 2 in a row
-    }
-    
-    return true; // Can play
+    return !(avoidConsecutiveSittingOut && state.lastPlayedRound === round - 2);
   };
 
   // Priority 2: Unique partnerships
@@ -97,9 +109,12 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     return hasPartnered ? -100 : 100; // Prefer new partnerships
   };
 
-  // Priority 3: Unique opposition (heavily weighted against repeated matchups)
-  const getOppositionScore = (team1: [number, number], team2: [number, number]): number => {
+  // Priority 3: Unique opposition with fatigue decay
+  const getOppositionScore = (team1: [number, number], team2: [number, number], round: number): number => {
     let score = 0;
+    
+    // Decay penalty for repeat opponents/partners over rounds (more tolerance later)
+    const decay = 1 - round / numRounds;
     
     for (const p1 of team1) {
       for (const p2 of team2) {
@@ -109,9 +124,9 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
         if (opponentCount === 0) {
           score += 200; // High bonus for new opponents
         } else if (opponentCount === 1) {
-          score -= 300; // Heavy penalty for second time
+          score -= 300 * decay; // Heavy penalty for second time (with decay)
         } else {
-          score -= 1000 * opponentCount; // Massive penalty for multiple repeats
+          score -= 1000 * opponentCount * decay; // Massive penalty for multiple repeats (with decay)
         }
       }
     }
@@ -119,7 +134,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     return score;
   };
 
-  // Priority 4: Court variety
+  // Priority 4: Court variety with repetition penalty
   const getCourtVarietyScore = (playerIds: number[], court: number): number => {
     let score = 0;
     
@@ -127,6 +142,8 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
       const state = playerStates.get(playerId)!;
       if (!state.courtsPlayed.has(court)) {
         score += 25; // Bonus for new court
+      } else {
+        score -= 10; // Light penalty for repeated court
       }
     }
     
@@ -171,14 +188,18 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     const partnershipScore = getPartnershipScore(team1[0], team1[1]) + 
                             getPartnershipScore(team2[0], team2[1]);
     
-    // Priority 3: Opposition uniqueness
-    const oppositionScore = getOppositionScore(team1, team2);
+    // Priority 3: Opposition uniqueness with decay
+    const oppositionScore = getOppositionScore(team1, team2, round);
     
-    // Priority 4: Court variety
+    // Priority 4: Court variety with repetition penalty
     const courtScore = getCourtVarietyScore(allPlayers, court);
     
-    // Combine scores with appropriate weights to maintain priority order
-    return mustPlayBonus + balanceScore + (partnershipScore * 0.8) + (oppositionScore * 0.6) + (courtScore * 0.4);
+    // Combine scores with configurable weights
+    return (mustPlayBonus * weights.mustPlay) + 
+           (balanceScore * weights.balance) + 
+           (partnershipScore * weights.partnership) + 
+           (oppositionScore * weights.opposition) + 
+           (courtScore * weights.court);
   };
 
   // Generate all possible match candidates for a round
@@ -223,7 +244,15 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
   // Generate schedule round by round
   for (let round = 1; round <= numRounds; round++) {
     const roundMatches: MatchCandidate[] = [];
-    let availablePlayerIds = players.map(p => p.id);
+    
+    // Filter eligible players early using Set for performance
+    const eligiblePlayerIds = new Set(
+      players
+        .map(p => p.id)
+        .filter(id => canPlayerPlay(id, round))
+    );
+    
+    let availablePlayerIds = Array.from(eligiblePlayerIds);
     
     // Update rounds since played
     for (const state of playerStates.values()) {
@@ -238,17 +267,19 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
     for (let court = 0; court < numCourts && availablePlayerIds.length >= 4; court++) {
       const candidates = generateMatchCandidates(availablePlayerIds, round);
       
+      // Break if no legal candidates
       if (candidates.length === 0) break;
       
-      // Sort by score (highest first)
-      candidates.sort((a, b) => b.score - a.score);
+      // Sort by score with random tie breaker for identical scores
+      candidates.sort((a, b) => (b.score - a.score) || (rng.next() - 0.5));
       
       // Take the best candidate
       const bestMatch = candidates[0];
       const matchPlayers = [...bestMatch.team1, ...bestMatch.team2];
       
-      // Remove selected players from available pool
-      availablePlayerIds = availablePlayerIds.filter(id => !matchPlayers.includes(id));
+      // Remove selected players from available pool using Set for faster lookups
+      const usedPlayersSet = new Set(matchPlayers);
+      availablePlayerIds = availablePlayerIds.filter(id => !usedPlayersSet.has(id));
       
       // Create match with correct court assignment (court + 1 since courts start at 1)
       const match: Match = {
