@@ -17,6 +17,8 @@ const Home = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [heroImageLoaded, setHeroImageLoaded] = useState(false);
 
+  console.log('Home component rendering:', { loading, pageLoading, user, isAdmin });
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
