@@ -48,6 +48,7 @@ interface SubgroupManagementProps {
 const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
   const [subgroups, setSubgroups] = useState<Subgroup[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [availableMembers, setAvailableMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -123,6 +124,32 @@ const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
     }
   };
 
+  const updateAvailableMembers = async (subgroupId: string) => {
+    if (!subgroupId) {
+      setAvailableMembers(members);
+      return;
+    }
+
+    try {
+      // Get current members of the selected subgroup
+      const { data: currentSubgroupMembers, error } = await supabase
+        .from('club_subgroup_members')
+        .select('user_id')
+        .eq('subgroup_id', subgroupId);
+
+      if (error) throw error;
+
+      const assignedUserIds = currentSubgroupMembers?.map(m => m.user_id) || [];
+      
+      // Filter out members who are already in the subgroup
+      const available = members.filter(member => !assignedUserIds.includes(member.user_id));
+      setAvailableMembers(available);
+    } catch (error) {
+      console.error('Error fetching subgroup members for filtering:', error);
+      setAvailableMembers(members);
+    }
+  };
+
   const fetchSubgroupMembers = async (subgroupId: string) => {
     try {
       const { data, error } = await supabase
@@ -151,6 +178,16 @@ const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
     }
     setLoading(false);
   }, [clubId, isOwner]);
+
+  // Initialize available members when members list changes
+  useEffect(() => {
+    setAvailableMembers(members);
+  }, [members]);
+
+  // Update available members when selected subgroup changes
+  useEffect(() => {
+    updateAvailableMembers(selectedSubgroup);
+  }, [selectedSubgroup, members]);
 
   const handleCreateSubgroup = async () => {
     if (!newSubgroup.name.trim()) {
@@ -262,6 +299,8 @@ const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
         description: "Member assigned to subgroup successfully",
       });
 
+      // Refresh the available members list for the current subgroup
+      updateAvailableMembers(selectedSubgroup);
       setAssignDialogOpen(false);
       fetchSubgroups();
     } catch (error) {
@@ -317,19 +356,25 @@ const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
                   <div>
                     <Label>Members</Label>
                     <div className="space-y-2 mt-2">
-                       {members.map((member) => (
-                         <div key={member.id} className="flex items-center justify-between p-2 border rounded">
-                           <span>
-                             {member.profiles?.full_name || member.profiles?.email || 'Unknown User'}
-                           </span>
-                           <Button
-                             size="sm"
-                             onClick={() => handleAssignMember(member.user_id)}
-                           >
-                             Assign
-                           </Button>
-                         </div>
-                       ))}
+                       {availableMembers.length === 0 ? (
+                         <p className="text-sm text-muted-foreground py-4">
+                           {selectedSubgroup ? 'All members are already assigned to this subgroup' : 'Select a subgroup to see available members'}
+                         </p>
+                       ) : (
+                         availableMembers.map((member) => (
+                           <div key={member.id} className="flex items-center justify-between p-2 border rounded">
+                             <span>
+                               {member.profiles?.full_name || member.profiles?.email || 'Unknown User'}
+                             </span>
+                             <Button
+                               size="sm"
+                               onClick={() => handleAssignMember(member.user_id)}
+                             >
+                               Assign
+                             </Button>
+                           </div>
+                         ))
+                       )}
                     </div>
                   </div>
                 </div>
