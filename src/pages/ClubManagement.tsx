@@ -588,11 +588,11 @@ const ClubManagement = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {/* Show club owner first */}
+                        {/* Show club owner first - get owner details from profiles */}
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">
-                              {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.full_name || 'Club Owner'}
+                              {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.full_name || 'Club Owner (No Name Set)'}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.email || 'Owner'}

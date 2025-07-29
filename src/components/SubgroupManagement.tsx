@@ -24,12 +24,20 @@ interface Member {
   user_id: string;
   status: string;
   joined_at: string;
+  profiles?: {
+    full_name?: string;
+    email?: string;
+  };
 }
 
 interface SubgroupMember {
   id: string;
   user_id: string;
   joined_at: string;
+  profiles?: {
+    full_name?: string;
+    email?: string;
+  };
 }
 
 interface SubgroupManagementProps {
@@ -79,7 +87,13 @@ const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
     try {
       const { data, error } = await supabase
         .from('club_members')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            email
+          )
+        `)
         .eq('club_id', clubId)
         .eq('status', 'approved');
 
@@ -94,7 +108,13 @@ const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
     try {
       const { data, error } = await supabase
         .from('club_subgroup_members')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            email
+          )
+        `)
         .eq('subgroup_id', subgroupId);
 
       if (error) throw error;
@@ -278,19 +298,19 @@ const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
                   <div>
                     <Label>Members</Label>
                     <div className="space-y-2 mt-2">
-                      {members.map((member) => (
-                        <div key={member.id} className="flex items-center justify-between p-2 border rounded">
-                          <span>
-                            Member ID: {member.user_id}
-                          </span>
-                          <Button
-                            size="sm"
-                            onClick={() => handleAssignMember(member.user_id)}
-                          >
-                            Assign
-                          </Button>
-                        </div>
-                      ))}
+                       {members.map((member) => (
+                         <div key={member.id} className="flex items-center justify-between p-2 border rounded">
+                           <span>
+                             {member.profiles?.full_name || member.profiles?.email || 'Unknown User'}
+                           </span>
+                           <Button
+                             size="sm"
+                             onClick={() => handleAssignMember(member.user_id)}
+                           >
+                             Assign
+                           </Button>
+                         </div>
+                       ))}
                     </div>
                   </div>
                 </div>
