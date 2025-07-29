@@ -24,9 +24,10 @@ const ImageUpload = ({ currentImageUrl, onImageChange, className, title = "Image
       const img = new Image();
 
       img.onload = () => {
-        // Set consistent dimensions (16:9 aspect ratio)
-        const targetWidth = 800;
-        const targetHeight = 450;
+        // Set dimensions based on use case - square for clubs, 16:9 for events
+        const isClubLogo = className?.includes('club');
+        const targetWidth = isClubLogo ? 400 : 800;
+        const targetHeight = isClubLogo ? 400 : 450;
         
         canvas.width = targetWidth;
         canvas.height = targetHeight;
@@ -176,7 +177,7 @@ const ImageUpload = ({ currentImageUrl, onImageChange, className, title = "Image
             <div className="absolute bottom-2 left-2">
               <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs flex items-center gap-1">
                 <Check className="h-3 w-3" />
-                Optimized (800x450)
+                Optimized ({className?.includes('club') ? '400x400' : '800x450'})
               </div>
             </div>
           </div>
@@ -205,7 +206,7 @@ const ImageUpload = ({ currentImageUrl, onImageChange, className, title = "Image
                   PNG, JPG or WEBP (MAX. 5MB)
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Will be auto-resized to 800x450 (16:9)
+                  Will be auto-resized to {className?.includes('club') ? '400x400 (1:1)' : '800x450 (16:9)'}
                 </p>
               </div>
             </label>
@@ -213,7 +214,7 @@ const ImageUpload = ({ currentImageUrl, onImageChange, className, title = "Image
         )}
         
         <div className="text-xs text-gray-500">
-          <p>• Images will be automatically resized to 800x450 pixels (16:9 aspect ratio)</p>
+          <p>• Images will be automatically resized to {className?.includes('club') ? '400x400 pixels (1:1 aspect ratio)' : '800x450 pixels (16:9 aspect ratio)'}</p>
           <p>• All images will display consistently regardless of original dimensions</p>
           <p>• Supported formats: JPG, PNG, WEBP</p>
         </div>
