@@ -108,7 +108,7 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto mb-8">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto mb-8">
             <AnimatedSection animation="scale-in" delay={600}>
               <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardHeader>
