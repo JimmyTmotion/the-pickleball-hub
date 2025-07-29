@@ -40,6 +40,8 @@ export interface SavedSchedule {
     name: string;
     email: string;
   };
+  club_id?: string | null;
+  subgroup_id?: string | null;
 }
 
 export interface Schedule {

@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
-import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3, ChevronDown, Edit, Check, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3, ChevronDown, Edit, Check, X, Building2, UserPlus } from 'lucide-react';
 import { getSavedSchedules, deleteSchedule, updateMatchResult, updatePlayerNames, updateScheduleName } from '@/utils/scheduleStorage';
 import { SavedSchedule, MatchResult } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
@@ -17,12 +19,21 @@ import LeagueTable from '@/components/LeagueTable';
 import OverallLeaderboard from '@/components/OverallLeaderboard';
 import PlayerNameEditor from '@/components/PlayerNameEditor';
 import AnimatedSection from '@/components/AnimatedSection';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 
 const ScheduleHistory: React.FC = () => {
   const [savedSchedules, setSavedSchedules] = React.useState<SavedSchedule[]>([]);
   const [selectedSchedule, setSelectedSchedule] = React.useState<SavedSchedule | null>(null);
   const [editingScheduleId, setEditingScheduleId] = React.useState<string | null>(null);
   const [editingName, setEditingName] = React.useState<string>('');
+  const [clubs, setClubs] = React.useState<any[]>([]);
+  const [subgroups, setSubgroups] = React.useState<any[]>([]);
+  const [assigningScheduleId, setAssigningScheduleId] = React.useState<string | null>(null);
+  const [selectedClubId, setSelectedClubId] = React.useState<string>('');
+  const [selectedSubgroupId, setSelectedSubgroupId] = React.useState<string>('');
+  const { user } = useAuth();
 
   React.useEffect(() => {
     const loadSchedules = async () => {
@@ -31,6 +42,40 @@ const ScheduleHistory: React.FC = () => {
     };
     loadSchedules();
   }, []);
+
+  React.useEffect(() => {
+    const loadClubs = async () => {
+      if (!user) return;
+      
+      const { data: clubsData } = await supabase
+        .from('clubs')
+        .select('*')
+        .eq('owner_id', user.id);
+      
+      setClubs(clubsData || []);
+    };
+    loadClubs();
+  }, [user]);
+
+  // Fetch subgroups when a club is selected
+  React.useEffect(() => {
+    const fetchSubgroups = async () => {
+      if (!selectedClubId || selectedClubId === "none") {
+        setSubgroups([]);
+        setSelectedSubgroupId('');
+        return;
+      }
+
+      const { data: subgroupsData } = await supabase
+        .from('club_subgroups')
+        .select('*')
+        .eq('club_id', selectedClubId);
+
+      setSubgroups(subgroupsData || []);
+    };
+
+    fetchSubgroups();
+  }, [selectedClubId]);
 
   const handleDelete = async (id: string) => {
     await deleteSchedule(id);
@@ -104,6 +149,42 @@ const ScheduleHistory: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingScheduleId(null);
     setEditingName('');
+  };
+
+  const handleAssignSchedule = async () => {
+    if (!assigningScheduleId) return;
+
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .update({
+          club_id: selectedClubId && selectedClubId !== "none" ? selectedClubId : null,
+          subgroup_id: selectedSubgroupId && selectedSubgroupId !== "none" ? selectedSubgroupId : null
+        })
+        .eq('id', assigningScheduleId);
+
+      if (error) throw error;
+
+      // Refresh the schedules list
+      const updatedSchedules = await getSavedSchedules();
+      setSavedSchedules(updatedSchedules);
+      
+      setAssigningScheduleId(null);
+      setSelectedClubId('');
+      setSelectedSubgroupId('');
+      
+      toast({
+        title: "Schedule assigned successfully",
+        description: "The schedule has been assigned to the selected club and subgroup.",
+      });
+    } catch (error) {
+      console.error('Error assigning schedule:', error);
+      toast({
+        title: "Error assigning schedule",
+        description: "Failed to assign the schedule. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownload = (schedule: SavedSchedule) => {
@@ -547,12 +628,18 @@ const ScheduleHistory: React.FC = () => {
                               <MapPin className="h-3 w-3" />
                               {schedule.config.numCourts} courts
                             </Badge>
-                            {completedMatches > 0 && (
-                              <Badge className="flex items-center gap-1">
-                                <Trophy className="h-3 w-3" />
-                                {completedMatches}/{schedule.schedule.matches.length} complete
-                              </Badge>
-                            )}
+                             {completedMatches > 0 && (
+                               <Badge className="flex items-center gap-1">
+                                 <Trophy className="h-3 w-3" />
+                                 {completedMatches}/{schedule.schedule.matches.length} complete
+                               </Badge>
+                             )}
+                             {schedule.club_id && (
+                               <Badge variant="outline" className="flex items-center gap-1">
+                                 <Building2 className="h-3 w-3" />
+                                 Assigned to Club
+                               </Badge>
+                             )}
                           </div>
                         </div>
                       </CardHeader>
@@ -566,23 +653,103 @@ const ScheduleHistory: React.FC = () => {
                               <Badge variant="secondary" className="mt-1">Unique Partnerships Prioritized</Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setSelectedSchedule(schedule)}
-                            >
-                              Manage & View Results
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDownload(schedule)}
-                              className="flex items-center gap-1"
-                            >
-                              <Download className="h-3 w-3" />
-                              CSV
-                            </Button>
+                           <div className="flex items-center gap-2">
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               onClick={() => setSelectedSchedule(schedule)}
+                             >
+                               Manage & View Results
+                             </Button>
+                             {clubs.length > 0 && (
+                               <Dialog>
+                                 <DialogTrigger asChild>
+                                   <Button
+                                     size="sm"
+                                     variant="outline"
+                                     onClick={() => {
+                                       setAssigningScheduleId(schedule.id);
+                                       setSelectedClubId(schedule.club_id || '');
+                                       setSelectedSubgroupId(schedule.subgroup_id || '');
+                                     }}
+                                     className="flex items-center gap-1"
+                                   >
+                                     <Building2 className="h-3 w-3" />
+                                     Assign to Club
+                                   </Button>
+                                 </DialogTrigger>
+                                 <DialogContent>
+                                   <DialogHeader>
+                                     <DialogTitle>Assign Schedule to Club</DialogTitle>
+                                   </DialogHeader>
+                                   <div className="space-y-4">
+                                     <div className="flex items-center gap-2">
+                                       <Building2 className="h-4 w-4 text-blue-600" />
+                                       <div className="flex-1">
+                                         <label className="text-sm font-medium">Club</label>
+                                         <Select value={selectedClubId} onValueChange={setSelectedClubId}>
+                                           <SelectTrigger>
+                                             <SelectValue placeholder="Select a club" />
+                                           </SelectTrigger>
+                                           <SelectContent>
+                                             <SelectItem value="none">No Club Assignment</SelectItem>
+                                             {clubs.map((club) => (
+                                               <SelectItem key={club.id} value={club.id}>
+                                                 {club.name}
+                                               </SelectItem>
+                                             ))}
+                                           </SelectContent>
+                                         </Select>
+                                       </div>
+                                     </div>
+
+                                     {selectedClubId && selectedClubId !== "none" && (
+                                       <div className="flex items-center gap-2">
+                                         <UserPlus className="h-4 w-4 text-purple-600" />
+                                         <div className="flex-1">
+                                           <label className="text-sm font-medium">Subgroup (Optional)</label>
+                                           <Select 
+                                             value={selectedSubgroupId} 
+                                             onValueChange={setSelectedSubgroupId}
+                                             disabled={subgroups.length === 0}
+                                           >
+                                             <SelectTrigger>
+                                               <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
+                                             </SelectTrigger>
+                                             <SelectContent>
+                                               <SelectItem value="none">No Subgroup Assignment</SelectItem>
+                                               {subgroups.map((subgroup) => (
+                                                 <SelectItem key={subgroup.id} value={subgroup.id}>
+                                                   {subgroup.name}
+                                                 </SelectItem>
+                                               ))}
+                                             </SelectContent>
+                                           </Select>
+                                         </div>
+                                       </div>
+                                     )}
+
+                                     <div className="flex justify-end gap-2">
+                                       <Button variant="outline" onClick={() => setAssigningScheduleId(null)}>
+                                         Cancel
+                                       </Button>
+                                       <Button onClick={handleAssignSchedule}>
+                                         Assign Schedule
+                                       </Button>
+                                     </div>
+                                   </div>
+                                 </DialogContent>
+                               </Dialog>
+                             )}
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               onClick={() => handleDownload(schedule)}
+                               className="flex items-center gap-1"
+                             >
+                               <Download className="h-3 w-3" />
+                               CSV
+                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
