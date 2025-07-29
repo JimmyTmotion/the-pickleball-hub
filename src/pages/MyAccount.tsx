@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AnimatedSection from '@/components/AnimatedSection';
+import Navigation from '@/components/ui/navigation';
 import { 
   User, 
   Calendar, 
@@ -198,7 +199,9 @@ const MyAccount: React.FC = () => {
 
   if (selectedSchedule) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+        <Navigation />
+        <div className="p-4">
         <div className="max-w-7xl mx-auto">
           <AnimatedSection animation="fade-up" className="flex items-center gap-4 mb-6">
             <Button 
@@ -252,13 +255,16 @@ const MyAccount: React.FC = () => {
             </TabsContent>
             </Tabs>
           </AnimatedSection>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+      <Navigation />
+      <div className="p-4">
       <div className="max-w-7xl mx-auto space-y-8">
         <AnimatedSection animation="fade-up" className="flex items-center gap-4 mb-8">
           <Link to="/">
@@ -532,6 +538,7 @@ const MyAccount: React.FC = () => {
           </TabsContent>
           </Tabs>
         </AnimatedSection>
+        </div>
       </div>
     </div>
   );

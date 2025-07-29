@@ -15,6 +15,7 @@ import EventManagement from '@/components/EventManagement';
 import ContactManagement from '@/components/ContactManagement';
 import ImageManagement from '@/components/ImageManagement';
 import AnimatedSection from '@/components/AnimatedSection';
+import Navigation from '@/components/ui/navigation';
 
 interface Profile {
   id: string;
@@ -250,7 +251,9 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+      <Navigation />
+      <div className="p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         <AnimatedSection animation="fade-up" className="flex justify-between items-center">
           <div>
@@ -451,6 +454,7 @@ const Admin = () => {
           </TabsContent>
           </Tabs>
         </AnimatedSection>
+        </div>
       </div>
     </div>
   );
