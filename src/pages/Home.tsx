@@ -179,9 +179,36 @@ const Home = () => {
                     </Button>
                   </Link>
                 </CardContent>
-              </Card>
-            </AnimatedSection>
-          </div>
+                  </Card>
+                </AnimatedSection>
+
+                <AnimatedSection delay={0.4}>
+                  <Card className="h-full hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-primary" />
+                        Manage Your Club
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-muted-foreground">
+                        Create and manage your pickleball club with member management, notice boards, and more.
+                      </p>
+                      <ul className="text-sm space-y-1 text-muted-foreground">
+                        <li>• Club member management</li>
+                        <li>• Notice board & announcements</li>
+                        <li>• FAQ management</li>
+                        <li>• Auto-join links</li>
+                      </ul>
+                      <div className="pt-2">
+                        <Link to="/club">
+                          <Button className="w-full">Create My Club</Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </AnimatedSection>
+              </div>
         </AnimatedSection>
 
         {/* Upcoming Events Section */}
