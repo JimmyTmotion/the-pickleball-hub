@@ -142,64 +142,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                 className="mt-1"
               />
             </div>
-
-            {/* Club Assignment Section - Only show for club owners */}
-            {isClubOwner && (
-              <>
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-orange-600" />
-                  <div className="flex-1">
-                    <Label htmlFor="clubSelect" className="text-sm font-medium">
-                      Assign to Club (optional)
-                    </Label>
-                    <Select value={selectedClubId} onValueChange={setSelectedClubId}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select a club to assign this schedule" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No Club Assignment</SelectItem>
-                        {clubs.map((club) => (
-                          <SelectItem key={club.id} value={club.id}>
-                            {club.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Subgroup Selection - Only show if a club is selected */}
-                {selectedClubId && selectedClubId !== "none" && (
-                  <div className="flex items-center gap-2">
-                    <UserPlus className="h-4 w-4 text-purple-600" />
-                    <div className="flex-1">
-                      <Label htmlFor="subgroupSelect" className="text-sm font-medium">
-                        Assign to Subgroup (optional)
-                      </Label>
-                      <Select value={selectedSubgroupId} onValueChange={setSelectedSubgroupId}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Subgroup Assignment</SelectItem>
-                          {subgroups.map((subgroup) => (
-                            <SelectItem key={subgroup.id} value={subgroup.id}>
-                              {subgroup.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {subgroups.length === 0 && selectedClubId && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          No subgroups found for this club. You can create subgroups in the Club Management page.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-            
+                      
             <div className="flex items-center gap-2">
               <Hash className="h-4 w-4 text-purple-600" />
               <div className="flex-1">
@@ -297,7 +240,62 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                 Toggle between prioritizing unique partnerships or varied opposition matchups
               </p>
             </div>
+            {/* Club Assignment Section - Only show for club owners */}
+            {isClubOwner && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-orange-600" />
+                  <div className="flex-1">
+                    <Label htmlFor="clubSelect" className="text-sm font-medium">
+                      Assign to Club (optional)
+                    </Label>
+                    <Select value={selectedClubId} onValueChange={setSelectedClubId}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select a club to assign this schedule" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Club Assignment</SelectItem>
+                        {clubs.map((club) => (
+                          <SelectItem key={club.id} value={club.id}>
+                            {club.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
+                {/* Subgroup Selection - Only show if a club is selected */}
+                {selectedClubId && selectedClubId !== "none" && (
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4 text-purple-600" />
+                    <div className="flex-1">
+                      <Label htmlFor="subgroupSelect" className="text-sm font-medium">
+                        Assign to Subgroup (optional)
+                      </Label>
+                      <Select value={selectedSubgroupId} onValueChange={setSelectedSubgroupId}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Subgroup Assignment</SelectItem>
+                          {subgroups.map((subgroup) => (
+                            <SelectItem key={subgroup.id} value={subgroup.id}>
+                              {subgroup.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {subgroups.length === 0 && selectedClubId && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          No subgroups found for this club. You can create subgroups in the Club Management page.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             <div className="space-y-3">
               <Label className="text-sm font-medium">
                 Schedule Requirements
