@@ -1,4 +1,4 @@
-// Global Optimized Pickleball Scheduler with Strict Fairness Constraints
+// Global Optimized Pickleball Scheduler with Progressive Fairness Enforcement
 
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
@@ -77,21 +77,20 @@ const getScheduleScore = (schedule: Match[], numRounds: number, numPlayers: numb
     }
   }
 
-  // Strict fairness constraint: no player can partner with or face someone more than once above the min
-  for (const stat of Object.values(stats)) {
-    const partnerCounts = [...stat.partnerships.values()];
-    const opponentCounts = [...stat.opponents.values()];
+  // Progressive fairness constraint for partnerships and opponents
+  for (const [id, stat] of Object.entries(stats)) {
+    const partnerCounts = Array.from(stat.partnerships.values());
+    const opponentCounts = Array.from(stat.opponents.values());
 
-    if (partnerCounts.length > 1) {
-      const max = Math.max(...partnerCounts);
-      const min = Math.min(...partnerCounts);
-      if (max - min > 1) return Infinity;
+    const partnerMin = partnerCounts.length < numPlayers - 1 ? 0 : Math.min(...partnerCounts);
+    const opponentMin = opponentCounts.length < numPlayers - 1 ? 0 : Math.min(...opponentCounts);
+
+    for (const count of partnerCounts) {
+      if (count > partnerMin + 1) return Infinity;
     }
 
-    if (opponentCounts.length > 1) {
-      const max = Math.max(...opponentCounts);
-      const min = Math.min(...opponentCounts);
-      if (max - min > 1) return Infinity;
+    for (const count of opponentCounts) {
+      if (count > opponentMin + 1) return Infinity;
     }
   }
 
@@ -206,6 +205,7 @@ export const generateSchedule = (config: ScheduleConfig): Schedule => {
 
   return { matches: best, playerStats, roundSittingOut };
 };
+
 
 export const exportScheduleToCSV = (schedule: Schedule): string => {
   const csvContent = [
