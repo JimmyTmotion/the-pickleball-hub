@@ -26,7 +26,8 @@ const eventTypes: EventType[] = [
 const matchTypes: MatchType[] = [
   'Singles',
   'Mixed Doubles',
-  'Gender Doubles'
+  'Gender Doubles',
+  'Team Event'
 ];
 
 interface EventFormModalProps {

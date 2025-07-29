@@ -1,6 +1,6 @@
 export type EventType = 'Tournament' | 'Social' | 'League' | 'Nationals' | 'Other' | 'Regular Recreational' | 'Festival';
 
-export type MatchType = 'Singles' | 'Mixed Doubles' | 'Gender Doubles';
+export type MatchType = 'Singles' | 'Mixed Doubles' | 'Gender Doubles' | 'Team Event';
 
 export interface Event {
   id: string;
