@@ -204,7 +204,7 @@ const Home = () => {
                       </ul>
                       <div className="pt-2">
                         <Link to="/club">
-                          <Button className="w-full">Create My Club</Button>
+                          <Button className="w-full">My Club</Button>
                         </Link>
                       </div>
                     </CardContent>
