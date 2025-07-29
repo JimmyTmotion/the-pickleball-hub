@@ -56,14 +56,33 @@ const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
 
   const fetchSubgroups = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('club_subgroups')
         .select(`
           *,
           club_subgroup_members(count)
         `)
-        .eq('club_id', clubId)
-        .order('created_at', { ascending: true });
+        .eq('club_id', clubId);
+
+      // If not owner, only show subgroups the user is a member of
+      if (!isOwner) {
+        const { data: userSubgroups, error: userError } = await supabase
+          .from('club_subgroup_members')
+          .select('subgroup_id')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+
+        if (userError) throw userError;
+        
+        const subgroupIds = userSubgroups?.map(s => s.subgroup_id) || [];
+        if (subgroupIds.length === 0) {
+          setSubgroups([]);
+          return;
+        }
+        
+        query = query.in('id', subgroupIds);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: true });
 
       if (error) throw error;
 
@@ -131,7 +150,7 @@ const SubgroupManagement = ({ clubId, isOwner }: SubgroupManagementProps) => {
       fetchMembers();
     }
     setLoading(false);
-  }, [clubId]);
+  }, [clubId, isOwner]);
 
   const handleCreateSubgroup = async () => {
     if (!newSubgroup.name.trim()) {
