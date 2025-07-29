@@ -10,11 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import ImageUpload from '@/components/ImageUpload';
 import Navigation from '@/components/ui/navigation';
 import SubgroupManagement from '@/components/SubgroupManagement';
+import LeagueTable from '@/components/LeagueTable';
 import { useToast } from '@/hooks/use-toast';
-import { Users, MapPin, Settings, Plus, UserPlus, MessageSquare, HelpCircle, Copy, Check, X, Trash2 } from 'lucide-react';
+import { SavedSchedule } from '@/types/schedule';
+import { Users, MapPin, Settings, Plus, UserPlus, MessageSquare, HelpCircle, Copy, Check, X, Trash2, Calendar, Trophy, BarChart3, ChevronDown } from 'lucide-react';
 
 interface Club {
   id: string;
@@ -69,6 +72,7 @@ const ClubManagement = () => {
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [schedules, setSchedules] = useState<SavedSchedule[]>([]);
   const [newNotice, setNewNotice] = useState({ title: '', content: '' });
   const [newFAQ, setNewFAQ] = useState({ question: '', answer: '' });
   const [clubForm, setClubForm] = useState({
@@ -274,6 +278,46 @@ const ClubManagement = () => {
 
       if (faqsError) throw faqsError;
       setFaqs(faqsData || []);
+
+      // Fetch schedules associated with this club
+      const { data: schedulesData, error: schedulesError } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('club_id', selectedClub.id)
+        .order('created_at', { ascending: false });
+
+      if (schedulesError) throw schedulesError;
+      
+      // Get user profiles for schedule creators
+      const userIds = [...new Set((schedulesData || []).map(s => s.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', userIds);
+      
+      const profilesMap = new Map(
+        (profilesData || []).map(p => [p.user_id, p])
+      );
+      
+      const mappedSchedules: SavedSchedule[] = (schedulesData || []).map((schedule) => {
+        const profile = profilesMap.get(schedule.user_id);
+        return {
+          id: schedule.id,
+          name: schedule.name,
+          config: schedule.config as any,
+          schedule: schedule.schedule as any,
+          createdAt: new Date(schedule.created_at),
+          createdBy: {
+            id: schedule.user_id,
+            name: profile?.full_name || 'Unknown User',
+            email: profile?.email || '',
+          },
+          club_id: schedule.club_id,
+          subgroup_id: schedule.subgroup_id,
+        };
+      });
+      
+      setSchedules(mappedSchedules);
 
     } catch (error) {
       console.error('Error fetching club data:', error);
@@ -516,6 +560,78 @@ const ClubManagement = () => {
     }
   };
 
+  const getCompletedMatchesCount = (schedule: SavedSchedule) => {
+    return schedule.schedule.matches.filter(m => m.result?.completed).length;
+  };
+
+  const areAllMatchesCompleted = (schedule: SavedSchedule) => {
+    return schedule.schedule.matches.every(match => match.result?.completed);
+  };
+
+  const getPlayerAwards = (schedule: SavedSchedule) => {
+    const statsMap = new Map();
+    
+    // Initialize stats for all players
+    schedule.schedule.playerStats.forEach(player => {
+      statsMap.set(player.playerId, {
+        playerId: player.playerId,
+        playerName: player.playerName,
+        pointsFor: 0,
+        pointsAgainst: 0,
+        pointsDifference: 0
+      });
+    });
+
+    // Calculate stats from completed matches
+    schedule.schedule.matches.forEach(match => {
+      if (!match.result?.completed) return;
+
+      const team1 = [match.players[0], match.players[1]];
+      const team2 = [match.players[2], match.players[3]];
+      const team1Score = match.result.team1Score;
+      const team2Score = match.result.team2Score;
+
+      team1.forEach(player => {
+        const stats = statsMap.get(player.id);
+        if (stats) {
+          stats.pointsFor += team1Score;
+          stats.pointsAgainst += team2Score;
+        }
+      });
+
+      team2.forEach(player => {
+        const stats = statsMap.get(player.id);
+        if (stats) {
+          stats.pointsFor += team2Score;
+          stats.pointsAgainst += team1Score;
+        }
+      });
+    });
+
+    const playerStats = Array.from(statsMap.values()).map(stats => ({
+      ...stats,
+      pointsDifference: stats.pointsFor - stats.pointsAgainst
+    }));
+
+    const completedMatches = schedule.schedule.matches.filter(m => m.result?.completed).length;
+    
+    if (completedMatches === 0) return null;
+
+    const topScorer = playerStats.reduce((max, player) => 
+      player.pointsFor > max.pointsFor ? player : max
+    );
+    
+    const bestDefensive = playerStats.reduce((min, player) => 
+      player.pointsAgainst < min.pointsAgainst ? player : min
+    );
+    
+    const mostConsistent = playerStats.reduce((max, player) => 
+      player.pointsDifference > max.pointsDifference ? player : max
+    );
+
+    return { topScorer, bestDefensive, mostConsistent };
+  };
+
   const isOwner = selectedClub && user && selectedClub.owner_id === user.id;
 
   if (loading || availableClubsLoading) {
@@ -531,16 +647,16 @@ const ClubManagement = () => {
     <>
       <Navigation />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 text-center">Club Management</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">My Clubs</h1>
         
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Left Column - Manage Your Club (2/3 width) */}
-          <div className="xl:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
+          {/* Left Column - Your Clubs (3/4 width on large screens) */}
+          <div className="lg:col-span-3 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                   <Settings className="h-5 w-5" />
-                  Manage Your Club
+                  Your Clubs
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -590,12 +706,13 @@ const ClubManagement = () => {
 
             {selectedClub && (
               <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="members">Members</TabsTrigger>
-                  <TabsTrigger value="subgroups">Subgroups</TabsTrigger>
-                  <TabsTrigger value="notices">Notices</TabsTrigger>
-                  <TabsTrigger value="faqs">FAQs</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto">
+                  <TabsTrigger value="overview" className="text-xs md:text-sm">Overview</TabsTrigger>
+                  <TabsTrigger value="schedules" className="text-xs md:text-sm">Schedules</TabsTrigger>
+                  <TabsTrigger value="members" className="text-xs md:text-sm">Members</TabsTrigger>
+                  <TabsTrigger value="subgroups" className="text-xs md:text-sm">Subgroups</TabsTrigger>
+                  <TabsTrigger value="notices" className="text-xs md:text-sm">Notices</TabsTrigger>
+                  <TabsTrigger value="faqs" className="text-xs md:text-sm">FAQs</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">
@@ -618,20 +735,182 @@ const ClubManagement = () => {
                             <Separator />
                             <div>
                               <p className="text-sm text-muted-foreground mb-2">Auto-join link</p>
-                              <div className="flex items-center gap-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <Input 
                                   value={`${window.location.origin}/club/join/${selectedClub.auto_join_token}`}
                                   readOnly
-                                  className="text-sm"
+                                  className="text-xs md:text-sm"
                                 />
-                                <Button onClick={copyJoinLink} variant="outline">
+                                <Button onClick={copyJoinLink} variant="outline" size="sm">
                                   {copiedToken ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                 </Button>
                               </div>
                             </div>
+                            </div>
                           </div>
                         )}
                       </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="schedules" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5" />
+                        Club Schedules ({schedules.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {schedules.length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">No schedules assigned to this club yet.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {schedules.map((schedule) => {
+                            const completedMatches = getCompletedMatchesCount(schedule);
+                            const allMatchesCompleted = areAllMatchesCompleted(schedule);
+                            const awards = getPlayerAwards(schedule);
+                            
+                            return (
+                              <Card key={schedule.id} className="border-l-4 border-l-primary">
+                                <CardHeader>
+                                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      <CardTitle className="text-lg break-words">{schedule.name}</CardTitle>
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        Created by {schedule.createdBy.name} on {schedule.createdAt.toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Badge variant="outline" className="text-xs">
+                                        {schedule.config.numRounds} rounds
+                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">
+                                        {schedule.config.numPlayers} players
+                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">
+                                        {schedule.config.numCourts} courts
+                                      </Badge>
+                                      {completedMatches > 0 && (
+                                        <Badge className="text-xs">
+                                          <Trophy className="h-3 w-3 mr-1" />
+                                          {completedMatches}/{schedule.schedule.matches.length} complete
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CardHeader>
+                                
+                                <CardContent className="space-y-4">
+                                  {completedMatches > 0 && (
+                                    <Collapsible>
+                                      <CollapsibleTrigger className="flex items-center gap-2 w-full hover:bg-muted/50 p-2 rounded transition-colors">
+                                        <Trophy className="h-4 w-4 text-yellow-500" />
+                                        <span className="font-medium">League Table & Results</span>
+                                        <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 data-[state=open]:rotate-180" />
+                                      </CollapsibleTrigger>
+                                      <CollapsibleContent className="space-y-4 mt-4">
+                                        {/* League Table */}
+                                        <div className="space-y-2">
+                                          <h4 className="font-medium text-sm">League Table</h4>
+                                          <LeagueTable schedule={schedule.schedule} />
+                                        </div>
+                                        
+                                        {/* Player Awards */}
+                                        {allMatchesCompleted && awards && (
+                                          <div className="space-y-2">
+                                            <h4 className="font-medium text-sm">Player Awards</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                              <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
+                                                <CardContent className="p-3 text-center">
+                                                  <div className="text-lg mb-1">🏆</div>
+                                                  <h5 className="font-medium text-yellow-700 text-xs">Top Scorer</h5>
+                                                  <p className="text-sm font-bold">{awards.topScorer.playerName}</p>
+                                                  <p className="text-xs text-muted-foreground">{awards.topScorer.pointsFor} points</p>
+                                                </CardContent>
+                                              </Card>
+                                              
+                                              <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                                                <CardContent className="p-3 text-center">
+                                                  <div className="text-lg mb-1">🛡️</div>
+                                                  <h5 className="font-medium text-blue-700 text-xs">Best Defense</h5>
+                                                  <p className="text-sm font-bold">{awards.bestDefensive.playerName}</p>
+                                                  <p className="text-xs text-muted-foreground">{awards.bestDefensive.pointsAgainst} conceded</p>
+                                                </CardContent>
+                                              </Card>
+                                              
+                                              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                                                <CardContent className="p-3 text-center">
+                                                  <div className="text-lg mb-1">📈</div>
+                                                  <h5 className="font-medium text-green-700 text-xs">Most Consistent</h5>
+                                                  <p className="text-sm font-bold">{awards.mostConsistent.playerName}</p>
+                                                  <p className="text-xs text-muted-foreground">+{awards.mostConsistent.pointsDifference}</p>
+                                                </CardContent>
+                                              </Card>
+                                            </div>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Individual Match Results by Round */}
+                                        <div className="space-y-2">
+                                          <h4 className="font-medium text-sm">Match Results by Round</h4>
+                                          <div className="space-y-3">
+                                            {Array.from(new Set(schedule.schedule.matches.map(m => m.round))).sort().map(round => {
+                                              const roundMatches = schedule.schedule.matches.filter(m => m.round === round);
+                                              const completedRoundMatches = roundMatches.filter(m => m.result?.completed);
+                                              
+                                              return (
+                                                <div key={round} className="border rounded-lg p-3">
+                                                  <h5 className="font-medium text-sm mb-2">
+                                                    Round {round} ({completedRoundMatches.length}/{roundMatches.length} completed)
+                                                  </h5>
+                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                    {roundMatches.map(match => (
+                                                      <div key={match.id} className="text-xs p-2 bg-muted/50 rounded">
+                                                        <div className="flex justify-between items-center">
+                                                          <span className="font-medium">Court {match.court}</span>
+                                                          {match.result?.completed ? (
+                                                            <Badge variant="secondary" className="text-xs">
+                                                              {match.result.team1Score} - {match.result.team2Score}
+                                                            </Badge>
+                                                          ) : (
+                                                            <Badge variant="outline" className="text-xs">
+                                                              Not played
+                                                            </Badge>
+                                                          )}
+                                                        </div>
+                                                        <div className="mt-1">
+                                                          <p>{match.players[0]?.name} & {match.players[1]?.name}</p>
+                                                          <p className="text-muted-foreground">vs</p>
+                                                          <p>{match.players[2]?.name} & {match.players[3]?.name}</p>
+                                                        </div>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      </CollapsibleContent>
+                                    </Collapsible>
+                                  )}
+                                  
+                                  {completedMatches === 0 && (
+                                    <div className="text-center py-4 text-muted-foreground">
+                                      <p className="text-sm">No matches completed yet. Check back when results are available!</p>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -660,31 +939,33 @@ const ClubManagement = () => {
                         </div>
                         
                         {/* Show other approved members */}
-                        {members.filter(m => m.status === 'approved' && m.user_id !== selectedClub.owner_id).map((member) => (
-                          <div key={member.id} className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">
-                                {member.profiles?.full_name || 'Unknown User'}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Joined: {new Date(member.joined_at).toLocaleDateString()}
-                              </p>
+                        <div className="space-y-4">
+                          {members.filter(m => m.status === 'approved' && m.user_id !== selectedClub.owner_id).map((member) => (
+                            <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <p className="font-medium">
+                                  {member.profiles?.full_name || 'Unknown User'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Joined: {new Date(member.joined_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary">Member</Badge>
+                                {isOwner && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => removeMember(member.id)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary">Member</Badge>
-                              {isOwner && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => removeMember(member.id)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -697,8 +978,8 @@ const ClubManagement = () => {
                       <CardContent>
                         <div className="space-y-4">
                           {members.filter(m => m.status === 'pending').map((member) => (
-                            <div key={member.id} className="flex items-center justify-between">
-                              <div>
+                            <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex-1">
                                 <p className="font-medium">
                                   {member.profiles?.full_name || 'Unknown User'}
                                 </p>
@@ -844,7 +1125,7 @@ const ClubManagement = () => {
             )}
           </div>
 
-          {/* Right Column - Join a Club (1/3 width) */}
+          {/* Right Column - Join a Club (1/4 width on large screens) */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -864,38 +1145,42 @@ const ClubManagement = () => {
                       Apply to join a club below. Your application will need to be approved by the club owner.
                     </p>
                     
-                    {availableClubs.map((club) => (
-                      <div key={club.id} className="border rounded-lg p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            {club.logo_url && (
-                              <img 
-                                src={club.logo_url} 
-                                alt="Club logo" 
-                                className="w-10 h-10 object-cover rounded"
-                              />
-                            )}
-                            <div>
-                              <h3 className="font-medium">{club.name}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {club.location_city}, {club.location_county}
-                              </p>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {availableClubs.map((club) => (
+                        <div key={club.id} className="border rounded-lg p-4">
+                          <div className="space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                              {club.logo_url && (
+                                <img 
+                                  src={club.logo_url} 
+                                  alt="Club logo" 
+                                  className="w-10 h-10 object-cover rounded self-start sm:self-center"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium break-words">{club.name}</h3>
+                                <p className="text-sm text-muted-foreground break-words">
+                                  {club.location_city}, {club.location_county}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                              {userApplications.has(club.id) ? (
+                                <Badge variant="secondary" className="text-center">Application Pending</Badge>
+                              ) : (
+                                <Button 
+                                  onClick={() => applyToJoinClub(club.id)}
+                                  size="sm"
+                                  className="w-full sm:w-auto"
+                                >
+                                  Apply to Join
+                                </Button>
+                              )}
                             </div>
                           </div>
-                          <div className="flex justify-end">
-                            {userApplications.has(club.id) ? (
-                              <Badge variant="outline" className="text-xs">
-                                Application pending
-                              </Badge>
-                            ) : (
-                              <Button onClick={() => applyToJoinClub(club.id)} size="sm">
-                                Apply to Join
-                              </Button>
-                            )}
-                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </CardContent>
