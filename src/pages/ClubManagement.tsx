@@ -450,9 +450,10 @@ const ClubManagement = () => {
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8 text-center">Club Management</h1>
         
-        {/* Full Width - Manage Your Club Section */}
-        <div className="space-y-6 max-w-4xl mx-auto">
-          <Card>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Left Column - Manage Your Club (2/3 width) */}
+          <div className="xl:col-span-2 space-y-6">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
@@ -504,231 +505,281 @@ const ClubManagement = () => {
               </CardContent>
             </Card>
 
-            {/* Club Management Tabs */}
             {selectedClub && (
               <Tabs defaultValue="overview" className="w-full">
                 <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="members">Members</TabsTrigger>
                   <TabsTrigger value="subgroups">Subgroups</TabsTrigger>
-                  <TabsTrigger value="notices">Notice Board</TabsTrigger>
+                  <TabsTrigger value="notices">Notices</TabsTrigger>
                   <TabsTrigger value="faqs">FAQs</TabsTrigger>
                 </TabsList>
 
-              <TabsContent value="overview" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="h-5 w-5" />
-                      {selectedClub.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      {selectedClub.logo_url && (
-                        <img 
-                          src={selectedClub.logo_url} 
-                          alt="Club logo" 
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                      )}
-                      <div>
-                        <p className="text-sm text-muted-foreground">Location</p>
-                        <p>{selectedClub.location_city}, {selectedClub.location_county}</p>
-                      </div>
-                    </div>
-                    
-                    {isOwner && (
-                      <div className="border-t pt-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">Auto-join Link</p>
-                            <p className="text-sm text-muted-foreground">
-                              Share this link for users to join automatically
-                            </p>
-                          </div>
-                          <Button onClick={copyJoinLink} variant="outline">
-                            {copiedToken ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="members" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Club Members ({members.filter(m => m.status === 'approved').length + 1})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {/* Show club owner first */}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">
-                            {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.full_name || 'Club Owner'}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.email || 'Owner'}
-                          </p>
-                        </div>
-                        <Badge variant="default">Owner</Badge>
-                      </div>
-                      
-                      {/* Show other approved members */}
-                      {members.filter(m => m.status === 'approved' && m.user_id !== selectedClub.owner_id).map((member) => (
-                        <div key={member.id} className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">
-                              {member.profiles?.full_name || 'Unknown User'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Joined: {new Date(member.joined_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <Badge variant="secondary">Member</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {isOwner && members.filter(m => m.status === 'pending').length > 0 && (
+                <TabsContent value="overview" className="space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Pending Applications</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5" />
+                        {selectedClub.name}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {members.filter(m => m.status === 'pending').map((member) => (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Location</p>
+                          <p>{selectedClub.location_city}, {selectedClub.location_county}</p>
+                        </div>
+                        
+                        {isOwner && (
+                          <div className="space-y-4">
+                            <Separator />
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-2">Auto-join link</p>
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  value={`${window.location.origin}/club/join/${selectedClub.auto_join_token}`}
+                                  readOnly
+                                  className="text-sm"
+                                />
+                                <Button onClick={copyJoinLink} variant="outline">
+                                  {copiedToken ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="members" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Club Members ({members.filter(m => m.status === 'approved').length + 1})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Show club owner first */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">
+                              {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.full_name || 'Club Owner'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {members.find(m => m.user_id === selectedClub.owner_id)?.profiles?.email || 'Owner'}
+                            </p>
+                          </div>
+                          <Badge variant="default">Owner</Badge>
+                        </div>
+                        
+                        {/* Show other approved members */}
+                        {members.filter(m => m.status === 'approved' && m.user_id !== selectedClub.owner_id).map((member) => (
                           <div key={member.id} className="flex items-center justify-between">
                             <div>
                               <p className="font-medium">
                                 {member.profiles?.full_name || 'Unknown User'}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {member.profiles?.email}
+                                Joined: {new Date(member.joined_at).toLocaleDateString()}
                               </p>
                             </div>
-                            <Button onClick={() => approveMember(member.id)}>
-                              Approve
-                            </Button>
+                            <Badge variant="secondary">Member</Badge>
                           </div>
                         ))}
                       </div>
                     </CardContent>
                   </Card>
-                )}
-              </TabsContent>
 
-              <TabsContent value="subgroups" className="space-y-6">
-                <SubgroupManagement 
-                  clubId={selectedClub.id} 
-                  isOwner={isOwner || false} 
-                />
-              </TabsContent>
+                  {isOwner && members.filter(m => m.status === 'pending').length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Pending Applications ({members.filter(m => m.status === 'pending').length})</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {members.filter(m => m.status === 'pending').map((member) => (
+                            <div key={member.id} className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">
+                                  {member.profiles?.full_name || 'Unknown User'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {member.profiles?.email}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Applied: {new Date(member.joined_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <Button onClick={() => approveMember(member.id)} size="sm">
+                                Approve
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
 
-              <TabsContent value="notices" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5" />
-                      Notice Board
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={createNotice} className="space-y-4 mb-6">
-                      <Input
-                        placeholder="Notice title"
-                        value={newNotice.title}
-                        onChange={(e) => setNewNotice({ ...newNotice, title: e.target.value })}
-                        required
-                      />
-                      <Textarea
-                        placeholder="Notice content"
-                        value={newNotice.content}
-                        onChange={(e) => setNewNotice({ ...newNotice, content: e.target.value })}
-                        required
-                      />
-                      <Button type="submit">Post Notice</Button>
-                    </form>
+                <TabsContent value="subgroups" className="space-y-6">
+                  <SubgroupManagement 
+                    clubId={selectedClub.id} 
+                    isOwner={isOwner || false} 
+                  />
+                </TabsContent>
 
-                    <Separator className="my-6" />
+                <TabsContent value="notices" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" />
+                        Notice Board
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={createNotice} className="space-y-4 mb-6">
+                        <Input
+                          placeholder="Notice title"
+                          value={newNotice.title}
+                          onChange={(e) => setNewNotice({ ...newNotice, title: e.target.value })}
+                          required
+                        />
+                        <Textarea
+                          placeholder="Notice content"
+                          value={newNotice.content}
+                          onChange={(e) => setNewNotice({ ...newNotice, content: e.target.value })}
+                          required
+                        />
+                        <Button type="submit">Post Notice</Button>
+                      </form>
+                      <Separator className="my-6" />
 
-                    <div className="space-y-4">
-                      {notices.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">
-                          No notices posted yet. Be the first to post a notice!
-                        </p>
-                      ) : (
-                        notices.map((notice) => (
+                      <div className="space-y-4">
+                        {notices.map((notice) => (
                           <div key={notice.id} className="border rounded-lg p-4">
                             <div className="flex justify-between items-start mb-2">
                               <h3 className="font-medium">{notice.title}</h3>
-                              <span className="text-sm text-muted-foreground">
+                              <p className="text-xs text-muted-foreground">
                                 {new Date(notice.created_at).toLocaleDateString()}
-                              </span>
+                              </p>
                             </div>
                             <p className="text-sm mb-2">{notice.content}</p>
                             <p className="text-xs text-muted-foreground">
-                              By: {notice.profiles?.full_name || 'Unknown User'}
+                              Posted by: {notice.profiles?.full_name || 'Unknown User'}
                             </p>
                           </div>
-                        ))
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="faqs" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <HelpCircle className="h-5 w-5" />
+                        Frequently Asked Questions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isOwner && (
+                        <>
+                          <form onSubmit={createFAQ} className="space-y-4 mb-6">
+                            <Input
+                              placeholder="Question"
+                              value={newFAQ.question}
+                              onChange={(e) => setNewFAQ({ ...newFAQ, question: e.target.value })}
+                              required
+                            />
+                            <Textarea
+                              placeholder="Answer"
+                              value={newFAQ.answer}
+                              onChange={(e) => setNewFAQ({ ...newFAQ, answer: e.target.value })}
+                              required
+                            />
+                            <Button type="submit">Add FAQ</Button>
+                          </form>
+                          <Separator className="my-6" />
+                        </>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
 
-              <TabsContent value="faqs" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <HelpCircle className="h-5 w-5" />
-                      Frequently Asked Questions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {isOwner && (
-                      <>
-                        <form onSubmit={createFAQ} className="space-y-4 mb-6">
-                          <Input
-                            placeholder="Question"
-                            value={newFAQ.question}
-                            onChange={(e) => setNewFAQ({ ...newFAQ, question: e.target.value })}
-                            required
-                          />
-                          <Textarea
-                            placeholder="Answer"
-                            value={newFAQ.answer}
-                            onChange={(e) => setNewFAQ({ ...newFAQ, answer: e.target.value })}
-                            required
-                          />
-                          <Button type="submit">Add FAQ</Button>
-                        </form>
-                        <Separator className="my-6" />
-                      </>
-                    )}
-
-                    <div className="space-y-4">
-                      {faqs.map((faq) => (
-                        <div key={faq.id} className="border rounded-lg p-4">
-                          <h3 className="font-medium mb-2">{faq.question}</h3>
-                          <p className="text-sm text-muted-foreground">{faq.answer}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="space-y-4">
+                        {faqs.map((faq) => (
+                          <div key={faq.id} className="border rounded-lg p-4">
+                            <h3 className="font-medium mb-2">{faq.question}</h3>
+                            <p className="text-sm text-muted-foreground">{faq.answer}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
               </Tabs>
             )}
+          </div>
+
+          {/* Right Column - Join a Club (1/3 width) */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  Join a Club
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {availableClubs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No clubs available to join at the moment</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Apply to join a club below. Your application will need to be approved by the club owner.
+                    </p>
+                    
+                    {availableClubs.map((club) => (
+                      <div key={club.id} className="border rounded-lg p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            {club.logo_url && (
+                              <img 
+                                src={club.logo_url} 
+                                alt="Club logo" 
+                                className="w-10 h-10 object-cover rounded"
+                              />
+                            )}
+                            <div>
+                              <h3 className="font-medium">{club.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {club.location_city}, {club.location_county}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            {userApplications.has(club.id) ? (
+                              <Badge variant="outline" className="text-xs">
+                                Application pending
+                              </Badge>
+                            ) : (
+                              <Button onClick={() => applyToJoinClub(club.id)} size="sm">
+                                Apply to Join
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Create Club Dialog */}
