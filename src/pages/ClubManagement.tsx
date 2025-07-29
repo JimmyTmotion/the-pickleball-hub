@@ -14,7 +14,7 @@ import ImageUpload from '@/components/ImageUpload';
 import Navigation from '@/components/ui/navigation';
 import SubgroupManagement from '@/components/SubgroupManagement';
 import { useToast } from '@/hooks/use-toast';
-import { Users, MapPin, Settings, Plus, UserPlus, MessageSquare, HelpCircle, Copy, Check } from 'lucide-react';
+import { Users, MapPin, Settings, Plus, UserPlus, MessageSquare, HelpCircle, Copy, Check, X } from 'lucide-react';
 
 interface Club {
   id: string;
@@ -345,6 +345,31 @@ const ClubManagement = () => {
     }
   };
 
+  const removeMember = async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('club_members')
+        .delete()
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Member removed successfully!"
+      });
+
+      fetchClubData();
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove member",
+        variant: "destructive"
+      });
+    }
+  };
+
   const createNotice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !selectedClub) return;
@@ -558,7 +583,7 @@ const ClubManagement = () => {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Users className="h-5 w-5" />
-                        Club Members ({members.filter(m => m.status === 'approved').length + 1})
+                        Club Members ({members.filter(m => m.status === 'approved').length})
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -587,7 +612,19 @@ const ClubManagement = () => {
                                 Joined: {new Date(member.joined_at).toLocaleDateString()}
                               </p>
                             </div>
-                            <Badge variant="secondary">Member</Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary">Member</Badge>
+                              {isOwner && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => removeMember(member.id)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
