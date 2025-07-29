@@ -1,7 +1,7 @@
 import { SavedSchedule, ScheduleConfig, Schedule, MatchResult } from '@/types/schedule';
 import { supabase } from '@/integrations/supabase/client';
 
-export const saveSchedule = async (config: ScheduleConfig, schedule: Schedule, name?: string): Promise<SavedSchedule> => {
+export const saveSchedule = async (config: ScheduleConfig, schedule: Schedule, name?: string, clubId?: string, subgroupId?: string): Promise<SavedSchedule> => {
   // Get current user info
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -17,14 +17,16 @@ export const saveSchedule = async (config: ScheduleConfig, schedule: Schedule, n
 
   const scheduleName = name || `Schedule ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
 
-  // Insert into database
+  // Insert into database with club and subgroup assignment
   const { data, error } = await supabase
     .from('schedules')
     .insert({
       name: scheduleName,
       config: config as any,
       schedule: schedule as any,
-      user_id: user.id
+      user_id: user.id,
+      club_id: clubId || null,
+      subgroup_id: subgroupId || null
     })
     .select()
     .single();

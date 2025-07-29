@@ -392,33 +392,54 @@ export type Database = {
       }
       schedules: {
         Row: {
+          club_id: string | null
           config: Json
           created_at: string
           id: string
           name: string
           schedule: Json
+          subgroup_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          club_id?: string | null
           config: Json
           created_at?: string
           id?: string
           name: string
           schedule: Json
+          subgroup_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          club_id?: string | null
           config?: Json
           created_at?: string
           id?: string
           name?: string
           schedule?: Json
+          subgroup_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "schedules_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedules_subgroup_id_fkey"
+            columns: ["subgroup_id"]
+            isOneToOne: false
+            referencedRelation: "club_subgroups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

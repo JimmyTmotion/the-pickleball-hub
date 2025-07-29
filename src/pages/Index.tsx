@@ -17,7 +17,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
 
 
-  const handleGenerateSchedule = async (config: ScheduleConfig, name?: string) => {
+  const handleGenerateSchedule = async (config: ScheduleConfig, name?: string, clubId?: string, subgroupId?: string) => {
     setIsLoading(true);
     
     try {
@@ -28,12 +28,16 @@ const Index = () => {
       setSchedule(newSchedule);
       setCurrentConfig(config);
       
-      // Auto-save to history
-      await saveSchedule(config, newSchedule, name);
+      // Auto-save to history with club and subgroup assignment
+      await saveSchedule(config, newSchedule, name, clubId, subgroupId);
+      
+      const assignmentText = clubId 
+        ? (subgroupId ? " and assigned to subgroup" : " and assigned to club")
+        : "";
       
       toast({
         title: "Schedule Generated! 🎾",
-        description: `Created ${newSchedule.matches.length} matches for ${config.numPlayers} players across ${config.numCourts} courts.`,
+        description: `Created ${newSchedule.matches.length} matches for ${config.numPlayers} players across ${config.numCourts} courts${assignmentText}.`,
       });
     } catch (error) {
       toast({

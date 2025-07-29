@@ -1,21 +1,25 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Clock, Users, MapPin, Shuffle, Hash, Heart, Target } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Clock, Users, MapPin, Shuffle, Hash, Heart, Target, Building2, UserPlus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScheduleConfig } from '@/types/schedule';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ScheduleFormProps {
-  onGenerateSchedule: (config: ScheduleConfig, name?: string) => void;
+  onGenerateSchedule: (config: ScheduleConfig, name?: string, clubId?: string, subgroupId?: string) => void;
   isLoading?: boolean;
 }
 
 const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoading }) => {
+  const { user } = useAuth();
   const [config, setConfig] = React.useState<ScheduleConfig>({
     numRounds: 10,
     numPlayers: 8,
@@ -27,6 +31,65 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
   
   const [playerNamesText, setPlayerNamesText] = React.useState('');
   const [scheduleName, setScheduleName] = React.useState('');
+  
+  // Club and subgroup state
+  const [clubs, setClubs] = useState<{id: string, name: string}[]>([]);
+  const [subgroups, setSubgroups] = useState<{id: string, name: string}[]>([]);
+  const [selectedClubId, setSelectedClubId] = useState<string>('');
+  const [selectedSubgroupId, setSelectedSubgroupId] = useState<string>('');
+  const [isClubOwner, setIsClubOwner] = useState(false);
+
+  // Fetch clubs owned by the user
+  useEffect(() => {
+    const fetchClubs = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('clubs')
+          .select('id, name')
+          .eq('owner_id', user.id)
+          .order('name');
+
+        if (error) throw error;
+        
+        setClubs(data || []);
+        setIsClubOwner(data && data.length > 0);
+      } catch (error) {
+        console.error('Error fetching clubs:', error);
+      }
+    };
+
+    fetchClubs();
+  }, [user]);
+
+  // Fetch subgroups when a club is selected
+  useEffect(() => {
+    const fetchSubgroups = async () => {
+      if (!selectedClubId) {
+        setSubgroups([]);
+        setSelectedSubgroupId('');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('club_subgroups')
+          .select('id, name')
+          .eq('club_id', selectedClubId)
+          .order('name');
+
+        if (error) throw error;
+        
+        setSubgroups(data || []);
+        setSelectedSubgroupId(''); // Reset subgroup selection when club changes
+      } catch (error) {
+        console.error('Error fetching subgroups:', error);
+      }
+    };
+
+    fetchSubgroups();
+  }, [selectedClubId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +106,12 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
       randomSeed: Math.floor(Math.random() * 1000000) // Generate random seed each time
     };
     
-    onGenerateSchedule(configWithNames, scheduleName.trim() || undefined);
+    onGenerateSchedule(
+      configWithNames, 
+      scheduleName.trim() || undefined,
+      selectedClubId || undefined,
+      selectedSubgroupId || undefined
+    );
   };
 
   const updateConfig = (field: keyof ScheduleConfig, value: string | number | boolean) => {
@@ -75,6 +143,63 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
               />
             </div>
 
+            {/* Club Assignment Section - Only show for club owners */}
+            {isClubOwner && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-orange-600" />
+                  <div className="flex-1">
+                    <Label htmlFor="clubSelect" className="text-sm font-medium">
+                      Assign to Club (optional)
+                    </Label>
+                    <Select value={selectedClubId} onValueChange={setSelectedClubId}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select a club to assign this schedule" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No Club Assignment</SelectItem>
+                        {clubs.map((club) => (
+                          <SelectItem key={club.id} value={club.id}>
+                            {club.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Subgroup Selection - Only show if a club is selected */}
+                {selectedClubId && (
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4 text-purple-600" />
+                    <div className="flex-1">
+                      <Label htmlFor="subgroupSelect" className="text-sm font-medium">
+                        Assign to Subgroup (optional)
+                      </Label>
+                      <Select value={selectedSubgroupId} onValueChange={setSelectedSubgroupId}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No Subgroup Assignment</SelectItem>
+                          {subgroups.map((subgroup) => (
+                            <SelectItem key={subgroup.id} value={subgroup.id}>
+                              {subgroup.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {subgroups.length === 0 && selectedClubId && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          No subgroups found for this club. You can create subgroups in the Club Management page.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            
             <div className="flex items-center gap-2">
               <Hash className="h-4 w-4 text-purple-600" />
               <div className="flex-1">
