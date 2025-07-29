@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,7 @@ interface FAQ {
 const ClubManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [availableClubs, setAvailableClubs] = useState<Club[]>([]);
   const [userApplications, setUserApplications] = useState<Set<string>>(new Set());
@@ -91,6 +93,14 @@ const ClubManagement = () => {
       fetchAvailableClubs();
     }
   }, [user]);
+
+  useEffect(() => {
+    // Handle URL parameters for tab selection
+    const tab = searchParams.get('tab');
+    if (tab && ['overview', 'results', 'members', 'notices', 'faqs', 'subgroups', 'settings'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (selectedClub) {
