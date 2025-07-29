@@ -136,7 +136,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
               <Input
                 id="scheduleName"
                 type="text"
-                placeholder="e.g., Mondays nights, Thursday mix up..."
+                placeholder="e.g., Morning Tournament, Team Building Event..."
                 value={scheduleName}
                 onChange={(e) => setScheduleName(e.target.value)}
                 className="mt-1"

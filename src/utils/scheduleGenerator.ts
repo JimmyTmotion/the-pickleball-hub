@@ -1,169 +1,361 @@
-// Completely Rewritten Pickleball Scheduler with Strict Fairness Rules
-
 import { Player, Match, ScheduleConfig, Schedule } from '@/types/schedule';
 
+// Simple seeded random number generator
 class SeededRandom {
-  constructor(private seed: number) {}
+  private seed: number;
+
+  constructor(seed: number) {
+    this.seed = seed;
+  }
+
   next(): number {
     this.seed = (this.seed * 9301 + 49297) % 233280;
     return this.seed / 233280;
   }
+
   shuffle<T>(array: T[]): T[] {
-    const result = [...array];
-    for (let i = result.length - 1; i > 0; i--) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(this.next() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]];
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    return result;
+    return shuffled;
   }
 }
 
+// Player state tracking
 interface PlayerState {
   id: number;
-  partners: Set<number>;
-  opponents: Set<number>;
-  lastPlayedRound: number;
+  name: string;
   matchCount: number;
+  lastPlayedRound: number;
+  roundsSincePlayed: number;
+  partnerships: Set<number>;
+  opponents: Map<number, number>; // Track opponent frequency
+  courtsPlayed: Set<number>;
+}
+
+// Match candidate for evaluation
+interface MatchCandidate {
+  team1: [number, number];
+  team2: [number, number];
+  court: number;
+  score: number;
+}
+
+// Modular scoring weights for easier tuning
+interface ScoringWeights {
+  balance: number;
+  mustPlay: number;
+  partnership: number;
+  opposition: number;
+  court: number;
 }
 
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
-  const { numRounds, numPlayers, numCourts, playerNames, randomSeed } = config;
+  const { numRounds, numPlayers, numCourts, playerNames, randomSeed, prioritizeUniquePartnerships, avoidConsecutiveSittingOut, balanceMatchCounts } = config;
+  
   const rng = new SeededRandom(randomSeed || Date.now());
-
-  const players: Player[] = Array.from({ length: numPlayers }, (_, i) => ({
-    id: i + 1,
-    name: playerNames?.[i] || `Player ${i + 1}`
-  }));
-
-  const state: Record<number, PlayerState> = {};
-  players.forEach(p => {
-    state[p.id] = {
-      id: p.id,
-      partners: new Set(),
-      opponents: new Set(),
-      lastPlayedRound: -2,
-      matchCount: 0
+  
+  // Configurable scoring weights
+  const weights: ScoringWeights = {
+    balance: 1.0,
+    mustPlay: 2.0,
+    partnership: 0.8,
+    opposition: 0.6,
+    court: 0.4
+  };
+  
+  // Initialize player states
+  const playerStates: Map<number, PlayerState> = new Map();
+  const players: Player[] = Array.from({ length: numPlayers }, (_, i) => {
+    const player = {
+      id: i + 1,
+      name: playerNames && playerNames[i] ? playerNames[i] : `Player ${i + 1}`
     };
+    
+    playerStates.set(player.id, {
+      id: player.id,
+      name: player.name,
+      matchCount: 0,
+      lastPlayedRound: -2, // Allow playing in first round
+      roundsSincePlayed: 999,
+      partnerships: new Set(),
+      opponents: new Map(), // Track frequency of each opponent
+      courtsPlayed: new Set()
+    });
+    
+    return player;
   });
 
   const matches: Match[] = [];
   const roundSittingOut: Record<number, Player[]> = {};
 
-  for (let round = 1; round <= numRounds; round++) {
-    const available = players.filter(p => round - state[p.id].lastPlayedRound > 1);
-    const shuffled = rng.shuffle(available.map(p => p.id));
+  // Priority 1: Enhanced sitting out rule enforcement
+  const canPlayerPlay = (playerId: number, round: number): boolean => {
+    const state = playerStates.get(playerId)!;
+    return !(avoidConsecutiveSittingOut && state.lastPlayedRound === round - 2);
+  };
 
-    const roundMatches: Match[] = [];
-    const used = new Set<number>();
+  // Priority 2: Unique partnerships
+  const getPartnershipScore = (p1: number, p2: number): number => {
+    const state1 = playerStates.get(p1)!;
+    const hasPartnered = state1.partnerships.has(p2);
+    
+    if (prioritizeUniquePartnerships && hasPartnered) {
+      return -1000; // Heavy penalty for repeat partnerships
+    }
+    
+    return hasPartnered ? -100 : 100; // Prefer new partnerships
+  };
 
-    for (let c = 0; c < numCourts && shuffled.length - used.size >= 4; c++) {
-      const candidates = shuffled.filter(id => !used.has(id));
+  // Priority 3: Unique opposition with fatigue decay
+  const getOppositionScore = (team1: [number, number], team2: [number, number], round: number): number => {
+    let score = 0;
+    
+    // Decay penalty for repeat opponents/partners over rounds (more tolerance later)
+    const decay = 1 - round / numRounds;
+    
+    for (const p1 of team1) {
+      for (const p2 of team2) {
+        const state1 = playerStates.get(p1)!;
+        const opponentCount = state1.opponents.get(p2) || 0;
+        
+        if (opponentCount === 0) {
+          score += 200; // High bonus for new opponents
+        } else if (opponentCount === 1) {
+          score -= 300 * decay; // Heavy penalty for second time (with decay)
+        } else {
+          score -= 1000 * opponentCount * decay; // Massive penalty for multiple repeats (with decay)
+        }
+      }
+    }
+    
+    return score;
+  };
 
-      let bestScore = -Infinity;
-      let bestGroup: number[] = [];
+  // Priority 4: Court variety with repetition penalty
+  const getCourtVarietyScore = (playerIds: number[], court: number): number => {
+    let score = 0;
+    
+    for (const playerId of playerIds) {
+      const state = playerStates.get(playerId)!;
+      if (!state.courtsPlayed.has(court)) {
+        score += 25; // Bonus for new court
+      } else {
+        score -= 10; // Light penalty for repeated court
+      }
+    }
+    
+    return score;
+  };
 
-      // Try all combinations of 4 players
-      for (let a = 0; a < candidates.length - 3; a++) {
-        for (let b = a + 1; b < candidates.length - 2; b++) {
-          for (let c1 = b + 1; c1 < candidates.length - 1; c1++) {
-            for (let d = c1 + 1; d < candidates.length; d++) {
-              const group = [candidates[a], candidates[b], candidates[c1], candidates[d]];
-              const [p1, p2, p3, p4] = group.map(id => state[id]);
+  // Main scoring function that respects priority order
+  const scoreMatchCandidate = (candidate: MatchCandidate, round: number): number => {
+    const { team1, team2, court } = candidate;
+    const allPlayers = [...team1, ...team2];
+    
+    // Priority 1: Match count balance (highest weight)
+    const matchCounts = allPlayers.map(id => playerStates.get(id)!.matchCount);
+    const minGlobalCount = Math.min(...Array.from(playerStates.values()).map(s => s.matchCount));
+    const maxGlobalCount = Math.max(...Array.from(playerStates.values()).map(s => s.matchCount));
+    
+    let balanceScore = 0;
+    let mustPlayBonus = 0;
+    
+    for (const playerId of allPlayers) {
+      const state = playerStates.get(playerId)!;
+      const count = state.matchCount;
+      
+      // Massive bonus for players who must play to avoid sitting out 2 in a row - only if enabled
+      if (avoidConsecutiveSittingOut !== false && state.lastPlayedRound === round - 2) {
+        mustPlayBonus += 10000;
+      }
+      
+      // Balance match counts - only if enabled
+      if (balanceMatchCounts !== false) {
+        if (count === minGlobalCount) {
+          balanceScore += 5000;
+        } else if (count === minGlobalCount + 1) {
+          balanceScore += 1000;
+        } else {
+          balanceScore -= (count - minGlobalCount) * 2000;
+        }
+      }
+    }
+    
+    // Priority 2: Partnership uniqueness
+    const partnershipScore = getPartnershipScore(team1[0], team1[1]) + 
+                            getPartnershipScore(team2[0], team2[1]);
+    
+    // Priority 3: Opposition uniqueness with decay
+    const oppositionScore = getOppositionScore(team1, team2, round);
+    
+    // Priority 4: Court variety with repetition penalty
+    const courtScore = getCourtVarietyScore(allPlayers, court);
+    
+    // Combine scores with configurable weights
+    return (mustPlayBonus * weights.mustPlay) + 
+           (balanceScore * weights.balance) + 
+           (partnershipScore * weights.partnership) + 
+           (oppositionScore * weights.opposition) + 
+           (courtScore * weights.court);
+  };
 
-              // Try 3 team splits
-              const teams = [
-                [[p1, p2], [p3, p4]],
-                [[p1, p3], [p2, p4]],
-                [[p1, p4], [p2, p3]]
-              ];
-
-              for (const [[t1a, t1b], [t2a, t2b]] of teams) {
-                const t1Partnered = t1a.partners.has(t1b.id);
-                const t2Partnered = t2a.partners.has(t2b.id);
-
-                const alreadyOpposed = [
-                  t1a.opponents.has(t2a.id),
-                  t1a.opponents.has(t2b.id),
-                  t1b.opponents.has(t2a.id),
-                  t1b.opponents.has(t2b.id)
-                ].filter(Boolean).length;
-
-                const score =
-                  (t1Partnered ? -100 : 100) +
-                  (t2Partnered ? -100 : 100) +
-                  -50 * alreadyOpposed;
-
-                if (score > bestScore) {
-                  bestScore = score;
-                  bestGroup = [t1a.id, t1b.id, t2a.id, t2b.id];
-                }
+  // Generate all possible match candidates for a round
+  const generateMatchCandidates = (availablePlayerIds: number[], round: number): MatchCandidate[] => {
+    const candidates: MatchCandidate[] = [];
+    const playerList = [...availablePlayerIds];
+    
+    // Generate all possible 4-player combinations
+    for (let i = 0; i < playerList.length - 3; i++) {
+      for (let j = i + 1; j < playerList.length - 2; j++) {
+        for (let k = j + 1; k < playerList.length - 1; k++) {
+          for (let l = k + 1; l < playerList.length; l++) {
+            const fourPlayers = [playerList[i], playerList[j], playerList[k], playerList[l]];
+            
+            // Try different team arrangements
+            const arrangements = [
+              { team1: [fourPlayers[0], fourPlayers[1]] as [number, number], team2: [fourPlayers[2], fourPlayers[3]] as [number, number] },
+              { team1: [fourPlayers[0], fourPlayers[2]] as [number, number], team2: [fourPlayers[1], fourPlayers[3]] as [number, number] },
+              { team1: [fourPlayers[0], fourPlayers[3]] as [number, number], team2: [fourPlayers[1], fourPlayers[2]] as [number, number] }
+            ];
+            
+            for (const arrangement of arrangements) {
+              for (let court = 1; court <= numCourts; court++) {
+                const candidate: MatchCandidate = {
+                  ...arrangement,
+                  court,
+                  score: 0
+                };
+                
+                candidate.score = scoreMatchCandidate(candidate, round);
+                candidates.push(candidate);
               }
             }
           }
         }
       }
+    }
+    
+    return candidates;
+  };
 
-      if (bestGroup.length === 4) {
-        const [a, b, c, d] = bestGroup;
-        used.add(a);
-        used.add(b);
-        used.add(c);
-        used.add(d);
-
-        const match: Match = {
-          id: matches.length + 1,
-          round,
-          court: c + 1,
-          players: [players[a - 1], players[b - 1], players[c - 1], players[d - 1]]
-        };
-
-        matches.push(match);
-
-        const team1 = [a, b];
-        const team2 = [c, d];
-        for (const id of [...team1, ...team2]) {
-          state[id].lastPlayedRound = round;
-          state[id].matchCount++;
-        }
-        state[a].partners.add(b);
-        state[b].partners.add(a);
-        state[c].partners.add(d);
-        state[d].partners.add(c);
-
-        for (const id1 of team1) {
-          for (const id2 of team2) {
-            state[id1].opponents.add(id2);
-            state[id2].opponents.add(id1);
-          }
+  // Generate schedule round by round
+  for (let round = 1; round <= numRounds; round++) {
+    const roundMatches: MatchCandidate[] = [];
+    
+    // Filter eligible players early using Set for performance
+    const eligiblePlayerIds = new Set(
+      players
+        .map(p => p.id)
+        .filter(id => canPlayerPlay(id, round))
+    );
+    
+    let availablePlayerIds = Array.from(eligiblePlayerIds);
+    
+    // Update rounds since played
+    for (const state of playerStates.values()) {
+      if (state.lastPlayedRound < round - 1) {
+        state.roundsSincePlayed = round - state.lastPlayedRound - 1;
+      } else {
+        state.roundsSincePlayed = 0;
+      }
+    }
+    
+    // Find best matches for this round
+    for (let court = 0; court < numCourts && availablePlayerIds.length >= 4; court++) {
+      const candidates = generateMatchCandidates(availablePlayerIds, round);
+      
+      // Break if no legal candidates
+      if (candidates.length === 0) break;
+      
+      // Sort by score with random tie breaker for identical scores
+      candidates.sort((a, b) => (b.score - a.score) || (rng.next() - 0.5));
+      
+      // Take the best candidate
+      const bestMatch = candidates[0];
+      const matchPlayers = [...bestMatch.team1, ...bestMatch.team2];
+      
+      // Remove selected players from available pool using Set for faster lookups
+      const usedPlayersSet = new Set(matchPlayers);
+      availablePlayerIds = availablePlayerIds.filter(id => !usedPlayersSet.has(id));
+      
+      // Create match with correct court assignment (court + 1 since courts start at 1)
+      const match: Match = {
+        id: matches.length + 1,
+        court: court + 1,
+        players: matchPlayers.map(id => players.find(p => p.id === id)!),
+        round
+      };
+      
+      matches.push(match);
+      
+      // Update player states
+      for (const playerId of matchPlayers) {
+        const state = playerStates.get(playerId)!;
+        state.matchCount++;
+        state.lastPlayedRound = round;
+        state.courtsPlayed.add(bestMatch.court);
+      }
+      
+      // Update partnerships
+      const [p1, p2] = bestMatch.team1;
+      const [p3, p4] = bestMatch.team2;
+      
+      playerStates.get(p1)!.partnerships.add(p2);
+      playerStates.get(p2)!.partnerships.add(p1);
+      playerStates.get(p3)!.partnerships.add(p4);
+      playerStates.get(p4)!.partnerships.add(p3);
+      
+      // Update opponents (track frequency)
+      for (const p1 of bestMatch.team1) {
+        for (const p2 of bestMatch.team2) {
+          const state1 = playerStates.get(p1)!;
+          const state2 = playerStates.get(p2)!;
+          state1.opponents.set(p2, (state1.opponents.get(p2) || 0) + 1);
+          state2.opponents.set(p1, (state2.opponents.get(p1) || 0) + 1);
         }
       }
     }
-
-    const sittingOut = players.filter(p => !used.has(p.id));
-    roundSittingOut[round] = sittingOut;
+    
+    // Track sitting out players
+    const sittingOutPlayers = players.filter(p => availablePlayerIds.includes(p.id));
+    roundSittingOut[round] = sittingOutPlayers;
   }
 
-  const playerStats = players.map(p => ({
-    playerId: p.id,
-    playerName: p.name,
-    matchCount: state[p.id].matchCount
+  // Calculate final player statistics
+  const playerStats = players.map(player => ({
+    playerId: player.id,
+    playerName: player.name,
+    matchCount: playerStates.get(player.id)!.matchCount
   }));
 
   return { matches, playerStats, roundSittingOut };
 };
 
 export const exportScheduleToCSV = (schedule: Schedule): string => {
-  const csvContent = [
-    ['Round', 'Court', 'Team 1 Player 1', 'Team 1 Player 2', 'Team 2 Player 1', 'Team 2 Player 2'],
-    ...schedule.matches.map(match => [
+  const headers = ['Match ID', 'Round', 'Court', 'Team 1 Player 1', 'Team 1 Player 2', 'Team 2 Player 1', 'Team 2 Player 2', 'Players Sitting Out'];
+  
+  const rows = schedule.matches.map(match => {
+    const sittingOut = schedule.roundSittingOut[match.round] || [];
+    const sittingOutNames = sittingOut.map(p => p.name).join('; ');
+    
+    return [
+      match.id.toString(),
       match.round.toString(),
       match.court.toString(),
-      match.players[0].name,
-      match.players[1].name,
-      match.players[2].name,
-      match.players[3].name
-    ])
-  ].map(row => row.join(',')).join('\n');
-
+      match.players[0]?.name || '',
+      match.players[1]?.name || '',
+      match.players[2]?.name || '',
+      match.players[3]?.name || '',
+      sittingOutNames
+    ];
+  });
+  
+  const csvContent = [headers, ...rows]
+    .map(row => row.map(cell => `"${cell}"`).join(','))
+    .join('\n');
+  
   return csvContent;
 };
