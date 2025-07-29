@@ -60,9 +60,11 @@ const ClubManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [availableClubs, setAvailableClubs] = useState<Club[]>([]);
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [availableClubsLoading, setAvailableClubsLoading] = useState(true);
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -79,6 +81,7 @@ const ClubManagement = () => {
   useEffect(() => {
     if (user) {
       fetchUserClubs();
+      fetchAvailableClubs();
     }
   }, [user]);
 
@@ -147,6 +150,79 @@ const ClubManagement = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableClubs = async () => {
+    if (!user) return;
+
+    try {
+      setAvailableClubsLoading(true);
+      
+      // Get all clubs
+      const { data: allClubs, error: clubsError } = await supabase
+        .from('clubs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (clubsError) throw clubsError;
+
+      // Get clubs user is already a member of or owns
+      const { data: userMemberships, error: membershipError } = await supabase
+        .from('club_members')
+        .select('club_id')
+        .eq('user_id', user.id);
+
+      if (membershipError) throw membershipError;
+
+      const memberClubIds = userMemberships?.map(m => m.club_id) || [];
+      
+      // Filter out clubs user owns or is already a member of
+      const available = allClubs?.filter(club => 
+        club.owner_id !== user.id && !memberClubIds.includes(club.id)
+      ) || [];
+
+      setAvailableClubs(available);
+    } catch (error) {
+      console.error('Error fetching available clubs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load available clubs. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setAvailableClubsLoading(false);
+    }
+  };
+
+  const applyToJoinClub = async (clubId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('club_members')
+        .insert({
+          club_id: clubId,
+          user_id: user.id,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Your application has been sent! Please wait for approval."
+      });
+
+      // Refresh available clubs to remove the applied club
+      fetchAvailableClubs();
+    } catch (error) {
+      console.error('Error applying to club:', error);
+      toast({
+        title: "Error",
+        description: "Failed to apply to club",
+        variant: "destructive"
+      });
     }
   };
 
@@ -227,6 +303,7 @@ const ClubManagement = () => {
       setSelectedClub(data);
       setShowCreateForm(false);
       setClubForm({ name: '', location_city: '', location_county: '', logo_url: '' });
+      fetchAvailableClubs(); // Refresh available clubs
     } catch (error) {
       console.error('Error creating club:', error);
       toast({
@@ -252,6 +329,7 @@ const ClubManagement = () => {
       });
 
       fetchClubData();
+      fetchAvailableClubs(); // Refresh available clubs
     } catch (error) {
       console.error('Error approving member:', error);
       toast({
@@ -352,7 +430,7 @@ const ClubManagement = () => {
 
   const isOwner = selectedClub && user && selectedClub.owner_id === user.id;
 
-  if (loading) {
+  if (loading || availableClubsLoading) {
     return (
       <>
         <Navigation />
@@ -361,125 +439,77 @@ const ClubManagement = () => {
     );
   }
 
-  if (clubs.length === 0) {
-    return (
-      <>
-        <Navigation />
-        <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">Manage Your Club</h1>
-          <p className="text-muted-foreground mb-8">Create or join a club to get started</p>
-          <Button onClick={() => setShowCreateForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create My Club
-          </Button>
-        </div>
-
-        <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Club</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={createClub} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Club Name</Label>
-                <Input
-                  id="name"
-                  value={clubForm.name}
-                  onChange={(e) => setClubForm({ ...clubForm, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="city">City/Town</Label>
-                <Input
-                  id="city"
-                  value={clubForm.location_city}
-                  onChange={(e) => setClubForm({ ...clubForm, location_city: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="county">County</Label>
-                <Input
-                  id="county"
-                  value={clubForm.location_county}
-                  onChange={(e) => setClubForm({ ...clubForm, location_county: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-            
-                <ImageUpload
-                  className="club-logo-upload"
-                  onImageChange={(url) => setClubForm({ ...clubForm, logo_url: url })}
-                  currentImageUrl={clubForm.logo_url}
-                  title="Club Logo"
-                />
-              </div>
-              <Button type="submit" className="w-full">Create Club</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <Navigation />
       <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Club Management</h1>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Club
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Club Selector */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Clubs</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {clubs.map((club) => (
-                <div
-                  key={club.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedClub?.id === club.id 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'hover:bg-muted'
-                  }`}
-                  onClick={() => setSelectedClub(club)}
-                >
-                  <div className="font-medium">{club.name}</div>
-                  <div className="text-sm opacity-70">
-                    {club.location_city}, {club.location_county}
+        <h1 className="text-3xl font-bold mb-8 text-center">Club Management</h1>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Manage Your Club */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Manage Your Club
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {clubs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">You don't own or belong to any clubs yet</p>
+                    <Button onClick={() => setShowCreateForm(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create My Club
+                    </Button>
                   </div>
-                  {club.owner_id === user?.id && (
-                    <Badge variant="secondary" className="text-xs mt-1">Owner</Badge>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-muted-foreground">Select a club to manage</p>
+                      <Button size="sm" onClick={() => setShowCreateForm(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Club
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {clubs.map((club) => (
+                        <div
+                          key={club.id}
+                          className={`p-3 rounded-lg cursor-pointer transition-colors border ${
+                            selectedClub?.id === club.id 
+                              ? 'bg-primary text-primary-foreground border-primary' 
+                              : 'hover:bg-muted border-border'
+                          }`}
+                          onClick={() => setSelectedClub(club)}
+                        >
+                          <div className="font-medium">{club.name}</div>
+                          <div className="text-sm opacity-70">
+                            {club.location_city}, {club.location_county}
+                          </div>
+                          {club.owner_id === user?.id && (
+                            <Badge variant="secondary" className="text-xs mt-1">Owner</Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-        {/* Club Details */}
-        <div className="lg:col-span-3">
-          {selectedClub && (
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="members">Members</TabsTrigger>
-                <TabsTrigger value="subgroups">Subgroups</TabsTrigger>
-                <TabsTrigger value="notices">Notice Board</TabsTrigger>
-                <TabsTrigger value="faqs">FAQs</TabsTrigger>
-              </TabsList>
+            {/* Club Management Tabs */}
+            {selectedClub && (
+              <Tabs defaultValue="overview" className="w-full">
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="members">Members</TabsTrigger>
+                  <TabsTrigger value="subgroups">Subgroups</TabsTrigger>
+                  <TabsTrigger value="notices">Notice Board</TabsTrigger>
+                  <TabsTrigger value="faqs">FAQs</TabsTrigger>
+                </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
                 <Card>
@@ -692,58 +722,111 @@ const ClubManagement = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
-          )}
-        </div>
-      </div>
+                </TabsContent>
+              </Tabs>
+            )}
+          </div>
 
-      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Club</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={createClub} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Club Name</Label>
-              <Input
-                id="name"
-                value={clubForm.name}
-                onChange={(e) => setClubForm({ ...clubForm, name: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="city">City/Town</Label>
-              <Input
-                id="city"
-                value={clubForm.location_city}
-                onChange={(e) => setClubForm({ ...clubForm, location_city: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="county">County</Label>
-              <Input
-                id="county"
-                value={clubForm.location_county}
-                onChange={(e) => setClubForm({ ...clubForm, location_county: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label>Club Logo</Label>
-              <ImageUpload
-                className="club-logo-upload"
-                onImageChange={(url) => setClubForm({ ...clubForm, logo_url: url })}
-                currentImageUrl={clubForm.logo_url}
-                title="Club Logo"
-              />
-            </div>
-            <Button type="submit" className="w-full">Create Club</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+          {/* Right Column - Join a Club */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  Join a Club
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {availableClubs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No clubs available to join at the moment</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Apply to join a club below. Your application will need to be approved by the club owner.
+                    </p>
+                    
+                    {availableClubs.map((club) => (
+                      <div key={club.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              {club.logo_url && (
+                                <img 
+                                  src={club.logo_url} 
+                                  alt="Club logo" 
+                                  className="w-10 h-10 object-cover rounded"
+                                />
+                              )}
+                              <div>
+                                <h3 className="font-medium">{club.name}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {club.location_city}, {club.location_county}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <Button onClick={() => applyToJoinClub(club.id)} size="sm">
+                            Apply to Join
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Create Club Dialog */}
+        <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Club</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={createClub} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Club Name</Label>
+                <Input
+                  id="name"
+                  value={clubForm.name}
+                  onChange={(e) => setClubForm({ ...clubForm, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="city">City/Town</Label>
+                <Input
+                  id="city"
+                  value={clubForm.location_city}
+                  onChange={(e) => setClubForm({ ...clubForm, location_city: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="county">County</Label>
+                <Input
+                  id="county"
+                  value={clubForm.location_county}
+                  onChange={(e) => setClubForm({ ...clubForm, location_county: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Club Logo</Label>
+                <ImageUpload
+                  className="club-logo-upload"
+                  onImageChange={(url) => setClubForm({ ...clubForm, logo_url: url })}
+                  currentImageUrl={clubForm.logo_url}
+                  title="Club Logo"
+                />
+              </div>
+              <Button type="submit" className="w-full">Create Club</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );
