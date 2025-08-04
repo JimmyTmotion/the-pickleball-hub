@@ -99,17 +99,13 @@ const calculateOppositionScore = (
   return score;
 };
 
-// Calculate match balance score
+// Calculate match balance score - always enabled
 const calculateBalanceScore = (
   playerIds: number[], 
-  playerStates: Map<number, PlayerState>,
-  balanceEnabled: boolean
+  playerStates: Map<number, PlayerState>
 ): number => {
-  if (!balanceEnabled) return 0;
-  
   const allMatchCounts = Array.from(playerStates.values()).map(s => s.matchCount);
   const minMatches = Math.min(...allMatchCounts);
-  const maxMatches = Math.max(...allMatchCounts);
   
   let score = 0;
   for (const playerId of playerIds) {
@@ -128,15 +124,12 @@ const calculateBalanceScore = (
   return score;
 };
 
-// Calculate must-play score for avoiding consecutive sitting
+// Calculate must-play score - always avoid consecutive sitting
 const calculateMustPlayScore = (
   playerIds: number[], 
   round: number,
-  playerStates: Map<number, PlayerState>,
-  avoidConsecutive: boolean
+  playerStates: Map<number, PlayerState>
 ): number => {
-  if (!avoidConsecutive) return 0;
-  
   let score = 0;
   for (const playerId of playerIds) {
     const state = playerStates.get(playerId)!;
@@ -186,8 +179,8 @@ const scoreMatchCandidate = (
   
   const oppositionScore = calculateOppositionScore(candidate.team1, candidate.team2, playerStates);
   
-  const balanceScore = calculateBalanceScore(allPlayers, playerStates, config.balanceMatchCounts || false);
-  const mustPlayScore = calculateMustPlayScore(allPlayers, round, playerStates, config.avoidConsecutiveSittingOut || false);
+  const balanceScore = calculateBalanceScore(allPlayers, playerStates);
+  const mustPlayScore = calculateMustPlayScore(allPlayers, round, playerStates);
   const courtScore = calculateCourtScore(allPlayers, candidate.court, playerStates);
   
   return (
@@ -294,12 +287,11 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
       
       if (remainingPlayers.length < 4) break;
       
-      // If avoiding consecutive sitting and we have players who sat out last round,
-      // they MUST be included in the next available match
+      // Always avoid consecutive sitting - players who sat out last round MUST be included
       let mustPlayPlayers: number[] = [];
       let regularPlayers: number[] = [];
       
-      if (config.avoidConsecutiveSittingOut && lastRoundSitting.length > 0) {
+      if (lastRoundSitting.length > 0) {
         mustPlayPlayers = remainingPlayers.filter(id => lastRoundSitting.includes(id));
         regularPlayers = remainingPlayers.filter(id => !lastRoundSitting.includes(id));
       } else {
@@ -403,7 +395,7 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
 
 // Enhanced schedule scoring function with better opponent balance analysis
 const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
-  const { balanceMatchCounts, avoidConsecutiveSittingOut } = config;
+  // All constraints are now always enforced
   
   // Calculate match count balance
   const matchCounts = schedule.playerStats.map(p => p.matchCount);
@@ -411,38 +403,35 @@ const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
   const maxMatches = Math.max(...matchCounts);
   const matchBalance = maxMatches - minMatches;
   
-  // Calculate consecutive sitting out penalty
+  // Calculate consecutive sitting out penalty - always enforced
   let consecutiveSittingPenalty = 0;
-  if (avoidConsecutiveSittingOut) {
-    const allPlayerIds = schedule.playerStats.map(p => p.playerId);
-    const maxRound = Math.max(...schedule.matches.map(m => m.round));
+  const allPlayerIds = schedule.playerStats.map(p => p.playerId);
+  const maxRound = Math.max(...schedule.matches.map(m => m.round));
+  
+  for (const playerId of allPlayerIds) {
+    let consecutiveRounds = 0;
+    let maxConsecutive = 0;
     
-    for (const playerId of allPlayerIds) {
-      let consecutiveRounds = 0;
-      let maxConsecutive = 0;
+    for (let round = 1; round <= maxRound; round++) {
+      const sittingPlayers = schedule.roundSittingOut[round]?.map(p => p.id) || [];
       
-      for (let round = 1; round <= maxRound; round++) {
-        const sittingPlayers = schedule.roundSittingOut[round]?.map(p => p.id) || [];
-        
-        if (sittingPlayers.includes(playerId)) {
-          consecutiveRounds++;
-          maxConsecutive = Math.max(maxConsecutive, consecutiveRounds);
-        } else {
-          consecutiveRounds = 0;
-        }
+      if (sittingPlayers.includes(playerId)) {
+        consecutiveRounds++;
+        maxConsecutive = Math.max(maxConsecutive, consecutiveRounds);
+      } else {
+        consecutiveRounds = 0;
       }
-      
-      // Heavily penalize consecutive sitting (exponential penalty)
-      if (maxConsecutive > 1) {
-        consecutiveSittingPenalty += Math.pow(maxConsecutive, 3) * 1000;
-      }
+    }
+    
+    // Heavily penalize consecutive sitting (exponential penalty)
+    if (maxConsecutive > 1) {
+      consecutiveSittingPenalty += Math.pow(maxConsecutive, 3) * 1000;
     }
   }
   
   // Enhanced partnership and opponent analysis
   const partnershipCounts = new Map<string, number>();
   const opponentCounts = new Map<string, number>();
-  const allPlayerIds = schedule.playerStats.map(p => p.playerId);
   
   // Initialize opponent counts for all possible pairs
   for (let i = 0; i < allPlayerIds.length; i++) {
@@ -504,12 +493,8 @@ const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
   // Consecutive sitting penalty (CRITICAL)
   score -= consecutiveSittingPenalty;
   
-  // Match balance penalty
-  if (balanceMatchCounts) {
-    score -= matchBalance * 500;
-  } else {
-    score -= matchBalance * 100;
-  }
+  // Match balance penalty - always enforced
+  score -= matchBalance * 500;
   
   // Enhanced opponent balance scoring
   score -= opponentRange * 300; // Heavily penalize wide ranges (0 vs 4 encounters)

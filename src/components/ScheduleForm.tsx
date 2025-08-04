@@ -23,9 +23,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
   const [config, setConfig] = React.useState<ScheduleConfig>({
     numRounds: 10,
     numPlayers: 8,
-    numCourts: 2,
-    avoidConsecutiveSittingOut: true,
-    balanceMatchCounts: true
+    numCourts: 2
   });
   
   const [playerNamesText, setPlayerNamesText] = React.useState('');
@@ -268,33 +266,6 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
                 )}
               </>
             )}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">
-                Schedule Requirements
-              </Label>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="avoidConsecutiveSittingOut"
-                    checked={config.avoidConsecutiveSittingOut !== false}
-                    onCheckedChange={(checked) => updateConfig('avoidConsecutiveSittingOut', checked)}
-                  />
-                  <Label htmlFor="avoidConsecutiveSittingOut" className="text-sm cursor-pointer">
-                    Avoid players sitting out twice in a row
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="balanceMatchCounts"
-                    checked={config.balanceMatchCounts !== false}
-                    onCheckedChange={(checked) => updateConfig('balanceMatchCounts', checked)}
-                  />
-                  <Label htmlFor="balanceMatchCounts" className="text-sm cursor-pointer">
-                    Balance match counts across all players
-                  </Label>
-                </div>
-              </div>
-            </div>
           </div>
 
           <Button 
