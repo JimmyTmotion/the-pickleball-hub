@@ -213,7 +213,7 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
 
   // Main schedule generation loop
   for (let round = 1; round <= numRounds; round++) {
-    let availablePlayers = players.map(p => p.id).filter(playerId => canPlay(playerId, round));
+    let availablePlayers = players.map(p => p.id);
     
     // Generate matches for this round
     for (let courtSlot = 0; courtSlot < numCourts && availablePlayers.length >= 4; courtSlot++) {
