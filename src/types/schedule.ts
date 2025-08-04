@@ -18,6 +18,14 @@ export interface Match {
   result?: MatchResult;
 }
 
+export interface ScoringWeights {
+  balance: number;
+  mustPlay: number;
+  partnership: number;
+  opposition: number;
+  court: number;
+}
+
 export interface ScheduleConfig {
   numRounds: number;
   numPlayers: number;
@@ -27,6 +35,7 @@ export interface ScheduleConfig {
   prioritizeUniquePartnerships?: boolean; // Prioritise unique partnerships when true, varied opposition when false
   avoidConsecutiveSittingOut?: boolean; // Avoid players sitting out twice in a row
   balanceMatchCounts?: boolean; // Balance match counts across all players
+  scoringWeights?: ScoringWeights; // Optional scoring weights for match generation
 }
 
 export interface SavedSchedule {
