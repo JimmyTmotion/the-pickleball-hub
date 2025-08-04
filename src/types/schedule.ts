@@ -31,8 +31,6 @@ export interface ScheduleConfig {
   numPlayers: number;
   numCourts: number;
   playerNames?: string[]; // Optional custom player names
-  randomSeed?: number; // Optional random seed for variability
-  prioritizeUniquePartnerships?: boolean; // Prioritise unique partnerships when true, varied opposition when false
   avoidConsecutiveSittingOut?: boolean; // Avoid players sitting out twice in a row
   balanceMatchCounts?: boolean; // Balance match counts across all players
   scoringWeights?: ScoringWeights; // Optional scoring weights for match generation

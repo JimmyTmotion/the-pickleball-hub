@@ -495,9 +495,6 @@ const MyAccount: React.FC = () => {
                                 <p>Total matches: {schedule.schedule.matches.length}</p>
                                 <p>Completed matches: {completedMatches}</p>
                                 <p>Created: {schedule.createdAt.toLocaleString()}</p>
-                                {schedule.config.prioritizeUniquePartnerships && (
-                                  <Badge variant="secondary" className="mt-1">Unique Partnerships Prioritised</Badge>
-                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button

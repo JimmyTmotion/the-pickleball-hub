@@ -24,7 +24,6 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
     numRounds: 10,
     numPlayers: 8,
     numCourts: 2,
-    prioritizeUniquePartnerships: true,
     avoidConsecutiveSittingOut: true,
     balanceMatchCounts: true
   });
@@ -213,33 +212,6 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onGenerateSchedule, isLoadi
               </p>
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">
-                Priority Setting
-              </Label>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-blue-500" />
-                  <span className={`text-sm ${config.prioritizeUniquePartnerships === false ? 'font-bold' : 'font-normal'}`}>
-                    Varied Opposition
-                  </span>
-                </div>
-                <Switch
-                  id="priorityToggle"
-                  checked={config.prioritizeUniquePartnerships !== false}
-                  onCheckedChange={(checked) => updateConfig('prioritizeUniquePartnerships', checked)}
-                />
-                <div className="flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-red-500" />
-                  <span className={`text-sm ${config.prioritizeUniquePartnerships !== false ? 'font-bold' : 'font-normal'}`}>
-                    Unique Partnerships
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500">
-                Toggle between prioritizing unique partnerships or varied opposition matchups
-              </p>
-            </div>
             {/* Club Assignment Section - Only show for club owners */}
             {isClubOwner && (
               <>

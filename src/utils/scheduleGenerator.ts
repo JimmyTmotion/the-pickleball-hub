@@ -64,27 +64,20 @@ const generateTeamPairings = (fourPlayers: number[]): { team1: [number, number],
 const calculatePartnershipScore = (
   p1: number, 
   p2: number, 
-  playerStates: Map<number, PlayerState>,
-  prioritizeUnique: boolean
+  playerStates: Map<number, PlayerState>
 ): number => {
   const state1 = playerStates.get(p1)!;
   const partnershipCount = state1.partnerships.get(p2) || 0;
   
-  if (prioritizeUnique) {
-    // Heavily penalize repeated partnerships when prioritizing unique partnerships
-    return partnershipCount === 0 ? 100 : -200 * Math.pow(partnershipCount, 2);
-  } else {
-    // Less penalty for repeated partnerships when prioritizing varied opposition
-    return partnershipCount === 0 ? 50 : -50 * partnershipCount;
-  }
+  // HARD CONSTRAINT: Unique partnerships only
+  return partnershipCount === 0 ? 1000 : -10000; // Massive penalty for repeated partnerships
 };
 
 // Calculate opposition score for team matchup
 const calculateOppositionScore = (
   team1: [number, number], 
   team2: [number, number], 
-  playerStates: Map<number, PlayerState>,
-  prioritizeUnique: boolean
+  playerStates: Map<number, PlayerState>
 ): number => {
   let score = 0;
   
@@ -92,12 +85,13 @@ const calculateOppositionScore = (
     for (const p2 of team2) {
       const opponentCount = playerStates.get(p1)!.opponents.get(p2) || 0;
       
-      if (prioritizeUnique) {
-        // Less emphasis on opponent variety when prioritizing partnerships
-        score += opponentCount === 0 ? 50 : -25 * opponentCount;
+      // Prioritize balanced opponent encounters
+      if (opponentCount === 0) {
+        score += 200; // High bonus for new opponents
+      } else if (opponentCount === 1) {
+        score += 50;  // Moderate bonus for second encounter
       } else {
-        // Higher emphasis on opponent variety
-        score += opponentCount === 0 ? 100 : -100 * Math.pow(opponentCount, 1.5);
+        score -= 100 * Math.pow(opponentCount - 1, 2); // Exponential penalty for excess encounters
       }
     }
   }
@@ -187,15 +181,10 @@ const scoreMatchCandidate = (
   const allPlayers = [...candidate.team1, ...candidate.team2];
   
   const partnershipScore = 
-    calculatePartnershipScore(candidate.team1[0], candidate.team1[1], playerStates, config.prioritizeUniquePartnerships || false) +
-    calculatePartnershipScore(candidate.team2[0], candidate.team2[1], playerStates, config.prioritizeUniquePartnerships || false);
+    calculatePartnershipScore(candidate.team1[0], candidate.team1[1], playerStates) +
+    calculatePartnershipScore(candidate.team2[0], candidate.team2[1], playerStates);
   
-  const oppositionScore = calculateOppositionScore(
-    candidate.team1, 
-    candidate.team2, 
-    playerStates, 
-    config.prioritizeUniquePartnerships || false
-  );
+  const oppositionScore = calculateOppositionScore(candidate.team1, candidate.team2, playerStates);
   
   const balanceScore = calculateBalanceScore(allPlayers, playerStates, config.balanceMatchCounts || false);
   const mustPlayScore = calculateMustPlayScore(allPlayers, round, playerStates, config.avoidConsecutiveSittingOut || false);
@@ -414,7 +403,7 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
 
 // Enhanced schedule scoring function with better opponent balance analysis
 const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
-  const { prioritizeUniquePartnerships, balanceMatchCounts, avoidConsecutiveSittingOut } = config;
+  const { balanceMatchCounts, avoidConsecutiveSittingOut } = config;
   
   // Calculate match count balance
   const matchCounts = schedule.playerStats.map(p => p.matchCount);
@@ -528,12 +517,10 @@ const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
   score -= zeroOpponentPairs * 100; // Penalize pairs that never play against each other
   score -= highOpponentPairs * 200; // Heavily penalize pairs that play 3+ times
   
-  // Partnership diversity scoring
-  if (prioritizeUniquePartnerships) {
-    score -= partnershipVariance * 80; // Higher penalty for repeated partnerships
-  } else {
-    score -= partnershipVariance * 30; // Lower penalty when not prioritizing partnerships
-  }
+  // Partnership diversity scoring - HARD CONSTRAINT for uniqueness
+  const partnershipRepeats = partnershipValues.filter(count => count > 1).length;
+  const partnershipPenalty = partnershipRepeats * 5000; // Massive penalty for any repeated partnerships
+  score -= partnershipPenalty;
   
   // Bonus for balanced distribution
   if (opponentRange <= 1) {
