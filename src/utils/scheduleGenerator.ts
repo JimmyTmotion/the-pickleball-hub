@@ -284,20 +284,18 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
 
   // Main schedule generation loop
   for (let round = 1; round <= numRounds; round++) {
+    console.log(`\n=== ROUND ${round} GENERATION ===`);
+    
     // Determine available players considering consecutive sitting out constraint
     let availablePlayers = players.map(p => p.id);
     
-    // If avoiding consecutive sitting out, prioritize players who sat out last round
-    if (config.avoidConsecutiveSittingOut && round > 1) {
-      const lastRoundSitting = roundSittingOut[round - 1]?.map(p => p.id) || [];
-      const lastRoundPlaying = players.map(p => p.id).filter(id => !lastRoundSitting.includes(id));
-      
-      // Prioritize players who sat out last round (they must play if possible)
-      availablePlayers = [...lastRoundSitting, ...lastRoundPlaying];
-    }
+    // Track who sat out last round
+    const lastRoundSitting = round > 1 ? (roundSittingOut[round - 1]?.map(p => p.id) || []) : [];
+    console.log(`Last round sitting: [${lastRoundSitting.join(', ')}]`);
     
     const roundMatches: MatchCandidate[] = [];
     const usedPlayers = new Set<number>();
+    const usedCourts = new Set<number>();
     
     // Generate matches for this round
     let attempts = 0;
@@ -311,34 +309,51 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
       if (remainingPlayers.length < 4) break;
       
       // If avoiding consecutive sitting and we have players who sat out last round,
-      // ensure they get priority in match generation
-      let priorityPlayers: number[] = [];
+      // they MUST be included in the next available match
+      let mustPlayPlayers: number[] = [];
       let regularPlayers: number[] = [];
       
-      if (config.avoidConsecutiveSittingOut && round > 1) {
-        const lastRoundSitting = roundSittingOut[round - 1]?.map(p => p.id) || [];
-        priorityPlayers = remainingPlayers.filter(id => lastRoundSitting.includes(id));
+      if (config.avoidConsecutiveSittingOut && lastRoundSitting.length > 0) {
+        mustPlayPlayers = remainingPlayers.filter(id => lastRoundSitting.includes(id));
         regularPlayers = remainingPlayers.filter(id => !lastRoundSitting.includes(id));
+        console.log(`Must play: [${mustPlayPlayers.join(', ')}], Regular: [${regularPlayers.join(', ')}]`);
       } else {
         regularPlayers = remainingPlayers;
       }
       
-      // Generate combinations prioritizing players who sat out last round
+      // Generate player combinations with strict priority for must-play players
       let playerCombinations: number[][] = [];
       
-      // First, try combinations that include priority players
-      if (priorityPlayers.length >= 2) {
-        const combinedPool = [...priorityPlayers, ...regularPlayers];
-        playerCombinations = generatePlayerCombinations(combinedPool);
+      if (mustPlayPlayers.length >= 4) {
+        // If we have 4+ must-play players, create matches with only them first
+        playerCombinations = generatePlayerCombinations(mustPlayPlayers);
+        console.log(`Using must-play only combinations: ${playerCombinations.length}`);
+      } else if (mustPlayPlayers.length >= 2) {
+        // If we have 2-3 must-play players, ensure they're included
+        const combinedPool = [...mustPlayPlayers, ...regularPlayers];
+        const allCombinations = generatePlayerCombinations(combinedPool);
         
-        // Sort combinations to prioritize those with more priority players
-        playerCombinations.sort((a, b) => {
-          const aPriorityCount = a.filter(id => priorityPlayers.includes(id)).length;
-          const bPriorityCount = b.filter(id => priorityPlayers.includes(id)).length;
-          return bPriorityCount - aPriorityCount;
-        });
+        // Filter to only combinations that include ALL must-play players
+        playerCombinations = allCombinations.filter(combo => 
+          mustPlayPlayers.every(id => combo.includes(id))
+        );
+        console.log(`Filtered combinations including all must-play: ${playerCombinations.length}`);
+        
+        // If no combinations include all must-play players, include as many as possible
+        if (playerCombinations.length === 0) {
+          playerCombinations = allCombinations.filter(combo => 
+            mustPlayPlayers.some(id => combo.includes(id))
+          );
+          console.log(`Fallback combinations including some must-play: ${playerCombinations.length}`);
+        }
       } else {
+        // No must-play constraints
         playerCombinations = generatePlayerCombinations(remainingPlayers);
+      }
+      
+      if (playerCombinations.length === 0) {
+        console.log(`No valid combinations found, breaking`);
+        break;
       }
       
       const allCandidates: MatchCandidate[] = [];
@@ -347,10 +362,13 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
         const teamPairings = generateTeamPairings(combination);
         
         for (const pairing of teamPairings) {
-          for (let court = 1; court <= numCourts; court++) {
-            // Check if court is already used this round
-            if (roundMatches.some(m => m.court === court)) continue;
-            
+          // Shuffle court assignments to avoid patterns
+          const availableCourts = Array.from({length: numCourts}, (_, i) => i + 1)
+            .filter(court => !usedCourts.has(court));
+          
+          const shuffledCourts = shuffleArray(availableCourts);
+          
+          for (const court of shuffledCourts) {
             const candidate: MatchCandidate = {
               ...pairing,
               court,
@@ -363,16 +381,22 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
         }
       }
       
-      if (allCandidates.length === 0) break;
+      if (allCandidates.length === 0) {
+        console.log(`No valid candidates found, breaking`);
+        break;
+      }
       
       // Sort by score and pick the best candidate
       allCandidates.sort((a, b) => b.score - a.score);
       const bestCandidate = allCandidates[0];
       
-      // Add to round matches and mark players as used
+      console.log(`Selected match: Court ${bestCandidate.court}, Players [${[...bestCandidate.team1, ...bestCandidate.team2].join(', ')}], Score: ${bestCandidate.score.toFixed(2)}`);
+      
+      // Add to round matches and mark players/court as used
       roundMatches.push(bestCandidate);
       const matchPlayers = [...bestCandidate.team1, ...bestCandidate.team2];
       matchPlayers.forEach(id => usedPlayers.add(id));
+      usedCourts.add(bestCandidate.court);
       
       // Update player states
       updatePlayerStates(bestCandidate, round, playerStates);
