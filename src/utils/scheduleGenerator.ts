@@ -284,13 +284,24 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
 
   // Main schedule generation loop
   for (let round = 1; round <= numRounds; round++) {
-    const availablePlayers = players.map(p => p.id);
+    // Determine available players considering consecutive sitting out constraint
+    let availablePlayers = players.map(p => p.id);
+    
+    // If avoiding consecutive sitting out, prioritize players who sat out last round
+    if (config.avoidConsecutiveSittingOut && round > 1) {
+      const lastRoundSitting = roundSittingOut[round - 1]?.map(p => p.id) || [];
+      const lastRoundPlaying = players.map(p => p.id).filter(id => !lastRoundSitting.includes(id));
+      
+      // Prioritize players who sat out last round (they must play if possible)
+      availablePlayers = [...lastRoundSitting, ...lastRoundPlaying];
+    }
+    
     const roundMatches: MatchCandidate[] = [];
     const usedPlayers = new Set<number>();
     
     // Generate matches for this round
     let attempts = 0;
-    const maxAttempts = 100;
+    const maxAttempts = 200;
     
     while (usedPlayers.size < availablePlayers.length && roundMatches.length < numCourts && attempts < maxAttempts) {
       attempts++;
@@ -299,8 +310,37 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
       
       if (remainingPlayers.length < 4) break;
       
-      // Generate all possible match candidates for remaining players
-      const playerCombinations = generatePlayerCombinations(remainingPlayers);
+      // If avoiding consecutive sitting and we have players who sat out last round,
+      // ensure they get priority in match generation
+      let priorityPlayers: number[] = [];
+      let regularPlayers: number[] = [];
+      
+      if (config.avoidConsecutiveSittingOut && round > 1) {
+        const lastRoundSitting = roundSittingOut[round - 1]?.map(p => p.id) || [];
+        priorityPlayers = remainingPlayers.filter(id => lastRoundSitting.includes(id));
+        regularPlayers = remainingPlayers.filter(id => !lastRoundSitting.includes(id));
+      } else {
+        regularPlayers = remainingPlayers;
+      }
+      
+      // Generate combinations prioritizing players who sat out last round
+      let playerCombinations: number[][] = [];
+      
+      // First, try combinations that include priority players
+      if (priorityPlayers.length >= 2) {
+        const combinedPool = [...priorityPlayers, ...regularPlayers];
+        playerCombinations = generatePlayerCombinations(combinedPool);
+        
+        // Sort combinations to prioritize those with more priority players
+        playerCombinations.sort((a, b) => {
+          const aPriorityCount = a.filter(id => priorityPlayers.includes(id)).length;
+          const bPriorityCount = b.filter(id => priorityPlayers.includes(id)).length;
+          return bPriorityCount - aPriorityCount;
+        });
+      } else {
+        playerCombinations = generatePlayerCombinations(remainingPlayers);
+      }
+      
       const allCandidates: MatchCandidate[] = [];
       
       for (const combination of playerCombinations) {
@@ -365,13 +405,41 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
 
 // Enhanced schedule scoring function
 const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
-  const { prioritizeUniquePartnerships, balanceMatchCounts } = config;
+  const { prioritizeUniquePartnerships, balanceMatchCounts, avoidConsecutiveSittingOut } = config;
   
   // Calculate match count balance
   const matchCounts = schedule.playerStats.map(p => p.matchCount);
   const minMatches = Math.min(...matchCounts);
   const maxMatches = Math.max(...matchCounts);
   const matchBalance = maxMatches - minMatches;
+  
+  // Calculate consecutive sitting out penalty
+  let consecutiveSittingPenalty = 0;
+  if (avoidConsecutiveSittingOut) {
+    const allPlayerIds = schedule.playerStats.map(p => p.playerId);
+    const maxRound = Math.max(...schedule.matches.map(m => m.round));
+    
+    for (const playerId of allPlayerIds) {
+      let consecutiveRounds = 0;
+      let maxConsecutive = 0;
+      
+      for (let round = 1; round <= maxRound; round++) {
+        const sittingPlayers = schedule.roundSittingOut[round]?.map(p => p.id) || [];
+        
+        if (sittingPlayers.includes(playerId)) {
+          consecutiveRounds++;
+          maxConsecutive = Math.max(maxConsecutive, consecutiveRounds);
+        } else {
+          consecutiveRounds = 0;
+        }
+      }
+      
+      // Heavily penalize consecutive sitting (exponential penalty)
+      if (maxConsecutive > 1) {
+        consecutiveSittingPenalty += Math.pow(maxConsecutive, 3) * 1000;
+      }
+    }
+  }
   
   // Calculate partnership distribution
   const partnershipCounts = new Map<string, number>();
@@ -403,6 +471,9 @@ const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
   
   // Calculate scores
   let score = 10000; // Base score
+  
+  // Consecutive sitting penalty (CRITICAL)
+  score -= consecutiveSittingPenalty;
   
   // Match balance penalty (very important if balanceMatchCounts is enabled)
   if (balanceMatchCounts) {
