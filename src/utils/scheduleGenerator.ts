@@ -284,14 +284,11 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
 
   // Main schedule generation loop
   for (let round = 1; round <= numRounds; round++) {
-    console.log(`\n=== ROUND ${round} GENERATION ===`);
-    
     // Determine available players considering consecutive sitting out constraint
     let availablePlayers = players.map(p => p.id);
     
     // Track who sat out last round
     const lastRoundSitting = round > 1 ? (roundSittingOut[round - 1]?.map(p => p.id) || []) : [];
-    console.log(`Last round sitting: [${lastRoundSitting.join(', ')}]`);
     
     const roundMatches: MatchCandidate[] = [];
     const usedPlayers = new Set<number>();
@@ -316,7 +313,6 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
       if (config.avoidConsecutiveSittingOut && lastRoundSitting.length > 0) {
         mustPlayPlayers = remainingPlayers.filter(id => lastRoundSitting.includes(id));
         regularPlayers = remainingPlayers.filter(id => !lastRoundSitting.includes(id));
-        console.log(`Must play: [${mustPlayPlayers.join(', ')}], Regular: [${regularPlayers.join(', ')}]`);
       } else {
         regularPlayers = remainingPlayers;
       }
@@ -327,7 +323,6 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
       if (mustPlayPlayers.length >= 4) {
         // If we have 4+ must-play players, create matches with only them first
         playerCombinations = generatePlayerCombinations(mustPlayPlayers);
-        console.log(`Using must-play only combinations: ${playerCombinations.length}`);
       } else if (mustPlayPlayers.length >= 2) {
         // If we have 2-3 must-play players, ensure they're included
         const combinedPool = [...mustPlayPlayers, ...regularPlayers];
@@ -337,24 +332,19 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
         playerCombinations = allCombinations.filter(combo => 
           mustPlayPlayers.every(id => combo.includes(id))
         );
-        console.log(`Filtered combinations including all must-play: ${playerCombinations.length}`);
         
         // If no combinations include all must-play players, include as many as possible
         if (playerCombinations.length === 0) {
           playerCombinations = allCombinations.filter(combo => 
             mustPlayPlayers.some(id => combo.includes(id))
           );
-          console.log(`Fallback combinations including some must-play: ${playerCombinations.length}`);
         }
       } else {
         // No must-play constraints
         playerCombinations = generatePlayerCombinations(remainingPlayers);
       }
       
-      if (playerCombinations.length === 0) {
-        console.log(`No valid combinations found, breaking`);
-        break;
-      }
+      if (playerCombinations.length === 0) break;
       
       const allCandidates: MatchCandidate[] = [];
       
@@ -381,16 +371,11 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
         }
       }
       
-      if (allCandidates.length === 0) {
-        console.log(`No valid candidates found, breaking`);
-        break;
-      }
+      if (allCandidates.length === 0) break;
       
       // Sort by score and pick the best candidate
       allCandidates.sort((a, b) => b.score - a.score);
       const bestCandidate = allCandidates[0];
-      
-      console.log(`Selected match: Court ${bestCandidate.court}, Players [${[...bestCandidate.team1, ...bestCandidate.team2].join(', ')}], Score: ${bestCandidate.score.toFixed(2)}`);
       
       // Add to round matches and mark players/court as used
       roundMatches.push(bestCandidate);
@@ -427,7 +412,7 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
   return { matches, playerStats, roundSittingOut };
 };
 
-// Enhanced schedule scoring function
+// Enhanced schedule scoring function with better opponent balance analysis
 const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
   const { prioritizeUniquePartnerships, balanceMatchCounts, avoidConsecutiveSittingOut } = config;
   
@@ -465,9 +450,18 @@ const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
     }
   }
   
-  // Calculate partnership distribution
+  // Enhanced partnership and opponent analysis
   const partnershipCounts = new Map<string, number>();
   const opponentCounts = new Map<string, number>();
+  const allPlayerIds = schedule.playerStats.map(p => p.playerId);
+  
+  // Initialize opponent counts for all possible pairs
+  for (let i = 0; i < allPlayerIds.length; i++) {
+    for (let j = i + 1; j < allPlayerIds.length; j++) {
+      const key = [allPlayerIds[i], allPlayerIds[j]].sort().join('-');
+      opponentCounts.set(key, 0);
+    }
+  }
   
   for (const match of schedule.matches) {
     const [a, b, c, d] = match.players.map(p => p.id);
@@ -493,37 +487,60 @@ const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
     });
   }
   
+  // Calculate detailed balance metrics
+  const opponentValues = Array.from(opponentCounts.values());
+  const partnershipValues = Array.from(partnershipCounts.values());
+  
+  // Opponent balance analysis
+  const opponentMin = Math.min(...opponentValues);
+  const opponentMax = Math.max(...opponentValues);
+  const opponentRange = opponentMax - opponentMin;
+  const opponentVariance = opponentValues.reduce((acc, count) => {
+    const ideal = opponentValues.reduce((sum, val) => sum + val, 0) / opponentValues.length;
+    return acc + Math.pow(count - ideal, 2);
+  }, 0) / opponentValues.length;
+  
+  // Partnership balance analysis
+  const partnershipVariance = partnershipValues.reduce((acc, count) => {
+    return acc + Math.pow(count - 1, 2);
+  }, 0);
+  
+  // Count how many opponent pairs have 0 encounters
+  const zeroOpponentPairs = opponentValues.filter(count => count === 0).length;
+  const highOpponentPairs = opponentValues.filter(count => count >= 3).length;
+  
   // Calculate scores
   let score = 10000; // Base score
   
   // Consecutive sitting penalty (CRITICAL)
   score -= consecutiveSittingPenalty;
   
-  // Match balance penalty (very important if balanceMatchCounts is enabled)
+  // Match balance penalty
   if (balanceMatchCounts) {
     score -= matchBalance * 500;
   } else {
     score -= matchBalance * 100;
   }
   
-  // Partnership diversity scoring
-  const partnershipVariance = Array.from(partnershipCounts.values())
-    .reduce((acc, count) => acc + Math.pow(count - 1, 2), 0);
+  // Enhanced opponent balance scoring
+  score -= opponentRange * 300; // Heavily penalize wide ranges (0 vs 4 encounters)
+  score -= opponentVariance * 50; // Penalize variance from ideal distribution
+  score -= zeroOpponentPairs * 100; // Penalize pairs that never play against each other
+  score -= highOpponentPairs * 200; // Heavily penalize pairs that play 3+ times
   
+  // Partnership diversity scoring
   if (prioritizeUniquePartnerships) {
-    score -= partnershipVariance * 50;
+    score -= partnershipVariance * 80; // Higher penalty for repeated partnerships
   } else {
-    score -= partnershipVariance * 20;
+    score -= partnershipVariance * 30; // Lower penalty when not prioritizing partnerships
   }
   
-  // Opponent diversity scoring
-  const opponentVariance = Array.from(opponentCounts.values())
-    .reduce((acc, count) => acc + Math.pow(count - 1, 2), 0);
-  
-  if (!prioritizeUniquePartnerships) {
-    score -= opponentVariance * 30;
-  } else {
-    score -= opponentVariance * 15;
+  // Bonus for balanced distribution
+  if (opponentRange <= 1) {
+    score += 500; // Bonus for very balanced opponent distribution
+  }
+  if (zeroOpponentPairs === 0) {
+    score += 300; // Bonus for all pairs playing at least once
   }
   
   return score;
