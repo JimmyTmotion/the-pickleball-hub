@@ -77,20 +77,52 @@ export const getSavedSchedules = async (): Promise<SavedSchedule[]> => {
       return [];
     }
 
-    return data.map((schedule) => ({
-      id: schedule.id,
-      name: schedule.name,
-      config: schedule.config as unknown as ScheduleConfig,
-      schedule: schedule.schedule as unknown as Schedule,
-      createdAt: new Date(schedule.created_at),
-      createdBy: {
-        id: user.id,
-        name: profile?.full_name || user.email || 'Unknown User',
-        email: profile?.email || user.email || '',
-      },
-      club_id: schedule.club_id,
-      subgroup_id: schedule.subgroup_id,
-    }));
+    // Fetch match results separately for each schedule
+    const schedulesWithResults = await Promise.all(
+      data.map(async (schedule) => {
+        const { data: results } = await supabase
+          .from('match_results')
+          .select('match_id, team1_score, team2_score, completed')
+          .eq('schedule_id', schedule.id);
+        
+        return { ...schedule, match_results: results || [] };
+      })
+    );
+
+    return schedulesWithResults.map((schedule) => {
+      const scheduleData = schedule.schedule as unknown as Schedule;
+      
+      // Apply match results to schedule matches
+      const matchesWithResults = scheduleData.matches.map(match => {
+        const result = schedule.match_results?.find((r: any) => r.match_id === match.id);
+        return {
+          ...match,
+          result: result ? {
+            team1Score: result.team1_score,
+            team2Score: result.team2_score,
+            completed: result.completed
+          } : undefined
+        };
+      });
+
+      return {
+        id: schedule.id,
+        name: schedule.name,
+        config: schedule.config as unknown as ScheduleConfig,
+        schedule: {
+          ...scheduleData,
+          matches: matchesWithResults
+        },
+        createdAt: new Date(schedule.created_at),
+        createdBy: {
+          id: user.id,
+          name: profile?.full_name || user.email || 'Unknown User',
+          email: profile?.email || user.email || '',
+        },
+        club_id: schedule.club_id,
+        subgroup_id: schedule.subgroup_id,
+      };
+    });
   } catch (error) {
     console.error('Error loading saved schedules:', error);
     return [];
@@ -120,37 +152,19 @@ export const updateScheduleName = async (id: string, name: string): Promise<void
 };
 
 export const updateMatchResult = async (scheduleId: string, matchId: number, result: MatchResult): Promise<void> => {
-  // First, get the current schedule
-  const { data: currentSchedule, error: fetchError } = await supabase
-    .from('schedules')
-    .select('schedule')
-    .eq('id', scheduleId)
-    .single();
+  // Save to match_results table
+  const { error } = await supabase
+    .from('match_results')
+    .upsert({
+      schedule_id: scheduleId,
+      match_id: matchId,
+      team1_score: result.team1Score,
+      team2_score: result.team2Score,
+      completed: result.completed
+    });
 
-  if (fetchError) {
-    throw new Error(`Failed to fetch schedule: ${fetchError.message}`);
-  }
-
-  const schedule = currentSchedule.schedule as unknown as Schedule;
-  
-  // Update the specific match result
-  const updatedMatches = schedule.matches.map(match => 
-    match.id === matchId ? { ...match, result } : match
-  );
-
-  const updatedSchedule = {
-    ...schedule,
-    matches: updatedMatches
-  };
-
-  // Save the updated schedule back to the database
-  const { error: updateError } = await supabase
-    .from('schedules')
-    .update({ schedule: updatedSchedule as any })
-    .eq('id', scheduleId);
-
-  if (updateError) {
-    throw new Error(`Failed to update match result: ${updateError.message}`);
+  if (error) {
+    throw new Error(`Failed to update match result: ${error.message}`);
   }
 };
 

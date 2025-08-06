@@ -5,23 +5,35 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, X } from 'lucide-react';
+import { saveMatchResult } from '@/utils/matchResults';
 
 interface MatchResultInputProps {
   match: Match;
   onResultUpdate: (matchId: number, result: MatchResult) => void;
+  scheduleId?: string;
 }
 
-const MatchResultInput: React.FC<MatchResultInputProps> = ({ match, onResultUpdate }) => {
+const MatchResultInput: React.FC<MatchResultInputProps> = ({ match, onResultUpdate, scheduleId }) => {
   const [team1Score, setTeam1Score] = useState(match.result?.team1Score?.toString() || '');
   const [team2Score, setTeam2Score] = useState(match.result?.team2Score?.toString() || '');
 
-  const autoSaveResult = (t1Score: string, t2Score: string) => {
+  const autoSaveResult = async (t1Score: string, t2Score: string) => {
     if (t1Score !== '' && t2Score !== '' && !isNaN(parseInt(t1Score)) && !isNaN(parseInt(t2Score))) {
       const result: MatchResult = {
         team1Score: parseInt(t1Score),
         team2Score: parseInt(t2Score),
         completed: true
       };
+      
+      // Save to database if scheduleId is provided
+      if (scheduleId) {
+        try {
+          await saveMatchResult(scheduleId, match.id, result);
+        } catch (error) {
+          console.error('Failed to save match result:', error);
+        }
+      }
+      
       onResultUpdate(match.id, result);
     }
   };
@@ -36,10 +48,21 @@ const MatchResultInput: React.FC<MatchResultInputProps> = ({ match, onResultUpda
     autoSaveResult(team1Score, value);
   };
 
-  const handleClearResult = () => {
+  const handleClearResult = async () => {
     setTeam1Score('');
     setTeam2Score('');
-    onResultUpdate(match.id, { team1Score: 0, team2Score: 0, completed: false });
+    const result = { team1Score: 0, team2Score: 0, completed: false };
+    
+    // Save to database if scheduleId is provided
+    if (scheduleId) {
+      try {
+        await saveMatchResult(scheduleId, match.id, result);
+      } catch (error) {
+        console.error('Failed to clear match result:', error);
+      }
+    }
+    
+    onResultUpdate(match.id, result);
   };
 
   const isCompleted = match.result?.completed || false;

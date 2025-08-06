@@ -11,6 +11,7 @@ import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, Bar
 import { getSavedSchedules, deleteSchedule, updateMatchResult, updatePlayerNames, updateScheduleName } from '@/utils/scheduleStorage';
 import { SavedSchedule, MatchResult } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
+import { checkMigrationStatus, runResultsMigration } from '@/utils/migrateResults';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
 import ScheduleDisplay from '@/components/ScheduleDisplay';
@@ -42,7 +43,32 @@ const ScheduleHistory: React.FC = () => {
       const schedules = await getSavedSchedules();
       setSavedSchedules(schedules);
     };
+    
+    const checkAndRunMigration = async () => {
+      try {
+        const needsMigration = await checkMigrationStatus();
+        if (needsMigration) {
+          console.log('Running results migration...');
+          await runResultsMigration();
+          toast({
+            title: "Migration Complete",
+            description: "Successfully migrated existing match results to new format",
+          });
+          // Refresh schedules after migration
+          loadSchedules();
+        }
+      } catch (error) {
+        console.error('Migration failed:', error);
+        toast({
+          title: "Migration Failed",
+          description: "Failed to migrate existing results",
+          variant: "destructive",
+        });
+      }
+    };
+    
     loadSchedules();
+    checkAndRunMigration();
   }, []);
 
   React.useEffect(() => {
@@ -355,11 +381,12 @@ const ScheduleHistory: React.FC = () => {
                   <CardContent className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {selectedSchedule.schedule.matches.map((match) => (
-                        <MatchResultInput
-                          key={match.id}
-                          match={match}
-                          onResultUpdate={handleResultUpdate}
-                        />
+                <MatchResultInput
+                  key={match.id}
+                  match={match}
+                  onResultUpdate={handleResultUpdate}
+                  scheduleId={selectedSchedule.id}
+                />
                       ))}
                     </div>
                   </CardContent>

@@ -360,6 +360,39 @@ export type Database = {
         }
         Relationships: []
       }
+      match_results: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          match_id: number
+          schedule_id: string
+          team1_score: number
+          team2_score: number
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          match_id: number
+          schedule_id: string
+          team1_score: number
+          team2_score: number
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          match_id?: number
+          schedule_id?: string
+          team1_score?: number
+          team2_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

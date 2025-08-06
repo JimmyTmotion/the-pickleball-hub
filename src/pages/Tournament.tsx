@@ -13,6 +13,7 @@ import AnimatedSection from '@/components/AnimatedSection';
 import PlayerSwapper from '@/components/PlayerSwapper';
 import CountdownTimer from '@/components/CountdownTimer';
 import { updateSchedule } from '@/utils/scheduleStorage';
+import { saveMatchResult } from '@/utils/matchResults';
 
 interface TournamentState {
   schedule: Schedule;
@@ -97,7 +98,7 @@ const Tournament = () => {
     });
   };
 
-  const handleResultChange = (matchId: number, field: 'team1Score' | 'team2Score', value: string) => {
+  const handleResultChange = async (matchId: number, field: 'team1Score' | 'team2Score', value: string) => {
     const score = parseInt(value) || 0;
     
     // If editing a completed match, update it directly in the schedule
@@ -119,6 +120,18 @@ const Tournament = () => {
         ...schedule,
         matches: updatedMatches
       });
+      
+      // Save to database if scheduleId is available
+      if (tournamentData.scheduleId) {
+        const currentMatch = updatedMatches.find(m => m.id === matchId);
+        if (currentMatch?.result) {
+          try {
+            await saveMatchResult(tournamentData.scheduleId, matchId, currentMatch.result);
+          } catch (error) {
+            console.error('Failed to save match result:', error);
+          }
+        }
+      }
     } else {
       // Otherwise, update the temporary results for new entries
       setRoundResults(prev => ({
@@ -159,7 +172,13 @@ const Tournament = () => {
     // Save to database if scheduleId is available
     if (tournamentData.scheduleId) {
       try {
-        await updateSchedule(tournamentData.scheduleId, updatedSchedule);
+        // Save individual match results to match_results table
+        for (const match of updatedMatches) {
+          if (match.round === currentRound && match.result?.completed) {
+            await saveMatchResult(tournamentData.scheduleId, match.id, match.result);
+          }
+        }
+        
         toast({
           title: "Results Saved!",
           description: `Round ${currentRound} results have been saved to database.`,
