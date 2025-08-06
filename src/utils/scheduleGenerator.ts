@@ -189,7 +189,7 @@ const roundMatches: MatchCandidate\[] = \[];
 const usedPlayers = new Set<number>();
 const usedCourts = new Set<number>();
 
-```
+
 let attempts = 0;
 while (usedPlayers.size < available.length && roundMatches.length < numCourts && attempts++ < 200) {
   const rem = available.filter(id => !usedPlayers.has(id));
@@ -233,7 +233,7 @@ roundMatches.forEach(m => {
 
 const inMatch = new Set(roundMatches.flatMap(m => [...m.team1, ...m.team2]));
 roundSittingOut[round] = players.filter(p => !inMatch.has(p.id));
-```
+
 
 }
 
