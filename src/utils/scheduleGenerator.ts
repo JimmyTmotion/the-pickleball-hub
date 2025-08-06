@@ -104,7 +104,7 @@ function calculateCourtScore(ids:number[],court:number,states:Map<number,PlayerS
 }
 
 // Score a match candidate
-target function scoreMatchCandidate(cand:MatchCandidate,round:number,states:Map<number,PlayerState>,config:ScheduleConfig,w:ScoringWeights):number{
+function scoreMatchCandidate(cand:MatchCandidate,round:number,states:Map<number,PlayerState>,config:ScheduleConfig,w:ScoringWeights):number{
   const pw=round<=3?w.partnership*2:w.partnership;
   const all=[...cand.team1,...cand.team2];
   const pScore=calculatePartnershipScore(cand.team1[0],cand.team1[1],states)+
