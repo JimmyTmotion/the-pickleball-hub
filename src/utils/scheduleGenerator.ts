@@ -20,7 +20,7 @@ interface MatchCandidate {
 const defaultWeights: ScoringWeights = {
   balance: 2.0,     // Higher priority for match balance
   mustPlay: 3.0,    // Highest priority for avoiding consecutive sitting
-  partnership: 1.5, // Important for partnership diversity
+  partnership: 2.5, // Increased weight for partnership diversity
   opposition: 1.0,  // Base weight for opponent diversity
   court: 0.3,       // Lower priority for court variety
 };
@@ -60,7 +60,7 @@ const generateTeamPairings = (fourPlayers: number[]): { team1: [number, number],
   ];
 };
 
-// Calculate partnership score for two players
+// Calculate partnership score for two players - FIXED to use graduated penalties
 const calculatePartnershipScore = (
   p1: number, 
   p2: number, 
@@ -69,8 +69,16 @@ const calculatePartnershipScore = (
   const state1 = playerStates.get(p1)!;
   const partnershipCount = state1.partnerships.get(p2) || 0;
   
-  // HARD CONSTRAINT: Unique partnerships only
-  return partnershipCount === 0 ? 1000 : -10000; // Massive penalty for repeated partnerships
+  // Use graduated penalty system instead of hard constraint
+  if (partnershipCount === 0) {
+    return 1000; // High bonus for new partnerships
+  } else if (partnershipCount === 1) {
+    return -200; // Moderate penalty for second partnership
+  } else if (partnershipCount === 2) {
+    return -800; // Strong penalty for third partnership
+  } else {
+    return -2000 * Math.pow(partnershipCount - 2, 2); // Exponential penalty for excessive partnerships
+  }
 };
 
 // Calculate opposition score for team matchup
@@ -231,7 +239,7 @@ const updatePlayerStates = (
   }
 };
 
-// Generate a single schedule attempt
+// Generate a single schedule attempt with improved partnership rotation
 const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
   const {
     numRounds,
@@ -278,7 +286,7 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
     
     // Generate matches for this round
     let attempts = 0;
-    const maxAttempts = 200;
+    const maxAttempts = 300; // Increased attempts per round for better optimization
     
     while (usedPlayers.size < availablePlayers.length && roundMatches.length < numCourts && attempts < maxAttempts) {
       attempts++;
@@ -327,9 +335,16 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
       
       if (playerCombinations.length === 0) break;
       
+      // Shuffle combinations to add more randomness and avoid patterns
+      const shuffledCombinations = shuffleArray(playerCombinations);
+      
       const allCandidates: MatchCandidate[] = [];
       
-      for (const combination of playerCombinations) {
+      // Limit combinations to prevent excessive computation
+      const maxCombinationsToEvaluate = Math.min(50, shuffledCombinations.length);
+      
+      for (let i = 0; i < maxCombinationsToEvaluate; i++) {
+        const combination = shuffledCombinations[i];
         const teamPairings = generateTeamPairings(combination);
         
         for (const pairing of teamPairings) {
@@ -393,7 +408,7 @@ const generateSingleSchedule = (config: ScheduleConfig): Schedule => {
   return { matches, playerStats, roundSittingOut };
 };
 
-// Enhanced schedule scoring function with better opponent balance analysis
+// Enhanced schedule scoring function with improved partnership scoring
 const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
   // All constraints are now always enforced
   
@@ -478,10 +493,15 @@ const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
     return acc + Math.pow(count - ideal, 2);
   }, 0) / opponentValues.length;
   
-  // Partnership balance analysis
+  // Partnership balance analysis - improved scoring
   const partnershipVariance = partnershipValues.reduce((acc, count) => {
     return acc + Math.pow(count - 1, 2);
   }, 0);
+  
+  // Count partnership distribution
+  const zeroPartnershipPairs = partnershipValues.filter(count => count === 0).length;
+  const singlePartnershipPairs = partnershipValues.filter(count => count === 1).length;
+  const multiplePartnershipPairs = partnershipValues.filter(count => count > 1).length;
   
   // Count how many opponent pairs have 0 encounters
   const zeroOpponentPairs = opponentValues.filter(count => count === 0).length;
@@ -502,10 +522,10 @@ const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
   score -= zeroOpponentPairs * 100; // Penalize pairs that never play against each other
   score -= highOpponentPairs * 200; // Heavily penalize pairs that play 3+ times
   
-  // Partnership diversity scoring - HARD CONSTRAINT for uniqueness
-  const partnershipRepeats = partnershipValues.filter(count => count > 1).length;
-  const partnershipPenalty = partnershipRepeats * 5000; // Massive penalty for any repeated partnerships
-  score -= partnershipPenalty;
+  // Improved partnership diversity scoring
+  score += singlePartnershipPairs * 50; // Bonus for single partnerships (ideal)
+  score -= multiplePartnershipPairs * 300; // Penalty for multiple partnerships
+  score -= partnershipVariance * 100; // Penalty for partnership imbalance
   
   // Bonus for balanced distribution
   if (opponentRange <= 1) {
@@ -514,13 +534,16 @@ const scoreSchedule = (schedule: Schedule, config: ScheduleConfig): number => {
   if (zeroOpponentPairs === 0) {
     score += 300; // Bonus for all pairs playing at least once
   }
+  if (multiplePartnershipPairs === 0) {
+    score += 400; // Big bonus for unique partnerships only
+  }
   
   return score;
 };
 
-// Main exported function with global optimization
+// Main exported function with reduced iterations (20 instead of 100)
 export const generateSchedule = (config: ScheduleConfig): Schedule => {
-  const maxAttempts = 100; // Increased for better optimization
+  const maxAttempts = 20; // Reduced from 100 to 20 as requested
   let bestSchedule: Schedule | null = null;
   let bestScore = -Infinity;
   
