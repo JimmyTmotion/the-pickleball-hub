@@ -331,11 +331,23 @@ const ScheduleHistory: React.FC = () => {
     switch (activeTab) {
       case 'schedule':
         return (
-          <ScheduleDisplay 
-            schedule={selectedSchedule.schedule} 
-            scheduleId={selectedSchedule.id}
-            onPlayerSwap={handlePlayerSwap}
-          />
+          <div className="space-y-4">
+            <div className="flex justify-end mb-4">
+              <Button 
+                onClick={handleBeginTournament}
+                className="flex items-center gap-2"
+              >
+                <Play className="h-4 w-4" />
+                Begin Tournament
+              </Button>
+            </div>
+            
+            <ScheduleDisplay 
+              schedule={selectedSchedule.schedule} 
+              scheduleId={selectedSchedule.id}
+              onPlayerSwap={handlePlayerSwap}
+            />
+          </div>
         );
 
       case 'results':
