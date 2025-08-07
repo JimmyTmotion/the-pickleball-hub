@@ -93,26 +93,32 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
             }
             .header {
               text-align: center;
-              margin-bottom: 20px;
+              margin-bottom: 8px;
               border-bottom: 2px solid #000;
-              padding-bottom: 10px;
+              padding-bottom: 6px;
             }
             .title {
-              font-size: 18px;
+              font-size: 16px;
               font-weight: bold;
-              margin-bottom: 5px;
+              margin-bottom: 3px;
             }
             .subtitle {
-              font-size: 12px;
+              font-size: 10px;
               color: #666;
+              margin-bottom: 2px;
+            }
+            .date-info {
+              font-size: 9px;
+              color: #888;
             }
             .rounds-container {
               display: flex;
               flex-direction: column;
-              gap: 15px;
+              gap: 12px;
+              margin-top: 0px;
             }
             .round-section {
-              margin-bottom: 15px;
+              margin-bottom: 12px;
             }
             .round-header {
               font-size: 14px;
@@ -259,10 +265,14 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
 
   const generatePrintableSchedule = () => {
     const roundEntries = Object.entries(matchesByRound);
+    const tournamentName = savedSchedule?.name || scheduleName || 'Tournament Schedule';
+    const createdDate = savedSchedule?.createdAt ? new Date(savedSchedule.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
+    
     let html = `
       <div class="header">
-        <div class="title">${scheduleName || 'Tournament Schedule'}</div>
+        <div class="title">${tournamentName}</div>
         <div class="subtitle">Manual Score Sheet</div>
+        <div class="date-info">Created: ${createdDate}</div>
       </div>
       <div class="rounds-container">
     `;
