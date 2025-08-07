@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, Users, TrendingUp, UserX, Edit, BarChart3, Play } from 'lucide-react';
+import { Calendar, Users, TrendingUp, UserX, Edit, BarChart3 } from 'lucide-react';
 import { Schedule, Player } from '@/types/schedule';
 import PlayerAnalytics from './PlayerAnalytics';
 import PlayerSwapper from './PlayerSwapper';
@@ -15,19 +15,11 @@ interface ScheduleDisplayProps {
   scheduleId?: string;
   onRegenerateSchedule?: () => void;
   onPlayerSwap?: (updatedSchedule: Schedule) => void;
-  onBeginTournament?: () => void;
 }
 
 type ViewType = 'matches' | 'statistics' | 'analytics';
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ 
-  schedule, 
-  scheduleName, 
-  scheduleId, 
-  onRegenerateSchedule, 
-  onPlayerSwap,
-  onBeginTournament 
-}) => {
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName, scheduleId, onRegenerateSchedule, onPlayerSwap }) => {
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
   const [activeView, setActiveView] = useState<ViewType>('matches');
@@ -193,44 +185,31 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
   return (
     <div className="space-y-6">
       {/* Navigation Buttons */}
-      <div className="flex gap-2 flex-wrap justify-between">
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant={activeView === 'matches' ? 'default' : 'outline'}
-            onClick={() => setActiveView('matches')}
-            className="flex items-center gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            Match Schedule
-          </Button>
-          <Button
-            variant={activeView === 'statistics' ? 'default' : 'outline'}
-            onClick={() => setActiveView('statistics')}
-            className="flex items-center gap-2"
-          >
-            <TrendingUp className="h-4 w-4" />
-            Player Statistics
-          </Button>
-          <Button
-            variant={activeView === 'analytics' ? 'default' : 'outline'}
-            onClick={() => setActiveView('analytics')}
-            className="flex items-center gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Partnership & Opponent Analytics
-          </Button>
-        </div>
-        
-        {/* Begin Tournament Button */}
-        {onBeginTournament && (
-          <Button
-            onClick={onBeginTournament}
-            className="flex items-center gap-2"
-          >
-            <Play className="h-4 w-4" />
-            Begin Tournament
-          </Button>
-        )}
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          variant={activeView === 'matches' ? 'default' : 'outline'}
+          onClick={() => setActiveView('matches')}
+          className="flex items-center gap-2"
+        >
+          <Calendar className="h-4 w-4" />
+          Match Schedule
+        </Button>
+        <Button
+          variant={activeView === 'statistics' ? 'default' : 'outline'}
+          onClick={() => setActiveView('statistics')}
+          className="flex items-center gap-2"
+        >
+          <TrendingUp className="h-4 w-4" />
+          Player Statistics
+        </Button>
+        <Button
+          variant={activeView === 'analytics' ? 'default' : 'outline'}
+          onClick={() => setActiveView('analytics')}
+          className="flex items-center gap-2"
+        >
+          <BarChart3 className="h-4 w-4" />
+          Partnership & Opponent Analytics
+        </Button>
       </div>
 
       {/* Main Content Card */}
