@@ -116,9 +116,8 @@ const ScheduleHistory: React.FC = () => {
 
   React.useEffect(() => {
     if (selectedSchedule) {
-      // Determine default tab based on match results
-      const hasCompletedMatches = selectedSchedule.schedule.matches.some(m => m.result?.completed);
-      setActiveTab(hasCompletedMatches ? "league" : "results");
+      // Always default to schedule tab
+      setActiveTab("schedule");
     }
   }, [selectedSchedule]);
 
@@ -322,11 +321,24 @@ const ScheduleHistory: React.FC = () => {
     switch (activeTab) {
       case 'schedule':
         return (
-          <ScheduleDisplay 
-            schedule={selectedSchedule.schedule} 
-            scheduleId={selectedSchedule.id}
-            onPlayerSwap={handlePlayerSwap}
-          />
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Match Schedule</h3>
+              <Button
+                onClick={() => handleDownload(selectedSchedule)}
+                className="flex items-center gap-2"
+                variant="outline"
+              >
+                <Download className="h-4 w-4" />
+                Download Schedule CSV
+              </Button>
+            </div>
+            <ScheduleDisplay 
+              schedule={selectedSchedule.schedule} 
+              scheduleId={selectedSchedule.id}
+              onPlayerSwap={handlePlayerSwap}
+            />
+          </div>
         );
 
       case 'results':
