@@ -20,12 +20,6 @@ const PlayerSwapper: React.FC<PlayerSwapperProps> = ({ players, onSwap, classNam
   return (
     <Card className={`border-dashed border-2 border-gray-300 ${className}`}>
       <CardContent className="p-4">
-        <div className="text-center mb-3">
-          <div className="text-sm font-medium text-gray-600 mb-2">
-            Drag & Drop to Rearrange Teams
-          </div>
-        </div>
-        
         <div className="space-y-3">
           {/* Team 1 */}
           <div className="bg-blue-50 rounded-lg p-3">
@@ -51,9 +45,9 @@ const PlayerSwapper: React.FC<PlayerSwapperProps> = ({ players, onSwap, classNam
               ))}
             </div>
           </div>
-
+          
           <div className="text-center text-sm font-bold text-gray-600">VS</div>
-
+          
           {/* Team 2 */}
           <div className="bg-orange-50 rounded-lg p-3">
             <div className="text-xs font-semibold text-orange-700 mb-2 text-center">Team 2</div>
@@ -78,7 +72,7 @@ const PlayerSwapper: React.FC<PlayerSwapperProps> = ({ players, onSwap, classNam
               ))}
             </div>
           </div>
-
+          
           {/* Quick swap buttons */}
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
             <Button
@@ -87,7 +81,7 @@ const PlayerSwapper: React.FC<PlayerSwapperProps> = ({ players, onSwap, classNam
               onClick={() => handleSwap(0, 2)}
               className="text-xs"
             >
-              Swap Teams
+              Swap Top
             </Button>
             <Button
               size="sm"
@@ -95,7 +89,7 @@ const PlayerSwapper: React.FC<PlayerSwapperProps> = ({ players, onSwap, classNam
               onClick={() => handleSwap(1, 3)}
               className="text-xs"
             >
-              Cross Swap
+              Swap Bottom
             </Button>
           </div>
         </div>
