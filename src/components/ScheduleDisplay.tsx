@@ -85,109 +85,154 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
           <style>
             body {
               font-family: Arial, sans-serif;
-              margin: 20px;
+              margin: 15px;
               color: #000;
               background: #fff;
+              font-size: 12px;
+              line-height: 1.3;
             }
             .header {
               text-align: center;
-              margin-bottom: 30px;
+              margin-bottom: 20px;
               border-bottom: 2px solid #000;
-              padding-bottom: 15px;
+              padding-bottom: 10px;
             }
             .title {
-              font-size: 24px;
+              font-size: 18px;
               font-weight: bold;
-              margin-bottom: 10px;
+              margin-bottom: 5px;
             }
             .subtitle {
-              font-size: 14px;
+              font-size: 12px;
               color: #666;
             }
+            .rounds-container {
+              display: flex;
+              flex-direction: column;
+              gap: 15px;
+            }
             .round-section {
-              margin-bottom: 40px;
+              margin-bottom: 15px;
               page-break-inside: avoid;
             }
             .round-header {
-              font-size: 18px;
+              font-size: 14px;
               font-weight: bold;
-              margin-bottom: 15px;
-              padding: 8px;
+              margin-bottom: 8px;
+              padding: 4px 8px;
               background-color: #f0f0f0;
               border: 1px solid #ccc;
+              text-align: center;
             }
-            .matches-grid {
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-              gap: 15px;
+            .matches-row {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px;
+              justify-content: space-between;
             }
             .match-card {
-              border: 2px solid #333;
-              padding: 15px;
-              margin-bottom: 15px;
+              border: 1px solid #333;
+              padding: 8px;
+              flex: 1;
+              min-width: 180px;
+              max-width: 220px;
               background-color: #fff;
             }
             .match-header {
               font-weight: bold;
               text-align: center;
-              margin-bottom: 10px;
-              font-size: 16px;
+              margin-bottom: 6px;
+              font-size: 11px;
+              background-color: #f5f5f5;
+              padding: 2px;
+              border: 1px solid #ddd;
+            }
+            .teams-container {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 6px;
             }
             .team {
-              margin: 10px 0;
-              padding: 8px;
-              border: 1px solid #666;
-              background-color: #f9f9f9;
+              flex: 1;
+              margin: 0 2px;
             }
             .team-label {
               font-weight: bold;
-              margin-bottom: 5px;
+              font-size: 10px;
+              text-align: center;
+              margin-bottom: 3px;
+              background-color: #e9ecef;
+              padding: 1px;
             }
             .players {
-              margin: 5px 0;
+              font-size: 10px;
+              text-align: center;
             }
             .player {
-              margin: 2px 0;
+              margin: 1px 0;
+              line-height: 1.2;
+            }
+            .vs {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
+              font-size: 12px;
+              width: 20px;
             }
             .score-section {
-              margin-top: 15px;
-              padding-top: 10px;
+              margin-top: 6px;
+              padding-top: 6px;
               border-top: 1px dashed #666;
+              display: flex;
+              justify-content: space-between;
             }
             .score-input {
               display: flex;
-              justify-content: space-between;
+              flex-direction: column;
               align-items: center;
-              margin: 5px 0;
+              font-size: 9px;
+            }
+            .score-label {
+              margin-bottom: 2px;
+              font-weight: bold;
             }
             .score-box {
-              width: 40px;
-              height: 30px;
-              border: 2px solid #333;
+              width: 25px;
+              height: 20px;
+              border: 1px solid #333;
               display: inline-block;
-              margin-left: 10px;
-            }
-            .vs {
-              text-align: center;
-              font-weight: bold;
-              font-size: 18px;
-              margin: 10px 0;
             }
             .sitting-out {
               background-color: #fff3cd;
               border: 1px solid #ffc107;
-              padding: 10px;
-              margin-top: 15px;
-              border-radius: 4px;
+              padding: 6px;
+              margin-top: 8px;
+              font-size: 10px;
+              text-align: center;
             }
             .sitting-out-label {
               font-weight: bold;
-              margin-bottom: 5px;
+              margin-bottom: 3px;
+            }
+            .page-break {
+              page-break-before: always;
             }
             @media print {
-              body { margin: 10px; }
-              .match-card { page-break-inside: avoid; }
-              .round-section { page-break-after: auto; }
+              body { 
+                margin: 10px;
+                font-size: 11px;
+              }
+              .match-card { 
+                page-break-inside: avoid;
+                max-width: none;
+              }
+              .round-section { 
+                page-break-inside: avoid;
+              }
+              .matches-row {
+                gap: 8px;
+              }
             }
           </style>
         </head>
@@ -214,16 +259,21 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
   };
 
   const generatePrintableSchedule = () => {
+    const roundEntries = Object.entries(matchesByRound);
     let html = `
       <div class="header">
         <div class="title">${scheduleName || 'Tournament Schedule'}</div>
         <div class="subtitle">Manual Score Sheet</div>
       </div>
+      <div class="rounds-container">
     `;
 
-    Object.entries(matchesByRound).forEach(([round, roundMatches]) => {
+    roundEntries.forEach(([round, roundMatches], roundIndex) => {
+      // Add page break every 5 rounds (except for the first round)
+      const pageBreakClass = roundIndex > 0 && roundIndex % 5 === 0 ? 'page-break' : '';
+      
       html += `
-        <div class="round-section">
+        <div class="round-section ${pageBreakClass}">
           <div class="round-header">Round ${round}</div>
       `;
 
@@ -231,44 +281,46 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
       if (roundSittingOut[parseInt(round)] && roundSittingOut[parseInt(round)].length > 0) {
         html += `
           <div class="sitting-out">
-            <div class="sitting-out-label">Sitting Out This Round:</div>
+            <div class="sitting-out-label">Sitting Out:</div>
             ${roundSittingOut[parseInt(round)].map(p => p.name).join(', ')}
           </div>
         `;
       }
 
-      html += `<div class="matches-grid">`;
+      html += `<div class="matches-row">`;
 
       roundMatches.forEach((match) => {
         html += `
           <div class="match-card">
-            <div class="match-header">Court ${match.court} - Match #${match.id}</div>
+            <div class="match-header">Court ${match.court} - #${match.id}</div>
             
-            <div class="team">
-              <div class="team-label">Team 1</div>
-              <div class="players">
-                <div class="player">${match.players[0]?.name || 'Player 1'}</div>
-                <div class="player">${match.players[1]?.name || 'Player 2'}</div>
+            <div class="teams-container">
+              <div class="team">
+                <div class="team-label">Team 1</div>
+                <div class="players">
+                  <div class="player">${match.players[0]?.name || 'P1'}</div>
+                  <div class="player">${match.players[1]?.name || 'P2'}</div>
+                </div>
               </div>
-            </div>
 
-            <div class="vs">VS</div>
+              <div class="vs">VS</div>
 
-            <div class="team">
-              <div class="team-label">Team 2</div>
-              <div class="players">
-                <div class="player">${match.players[2]?.name || 'Player 3'}</div>
-                <div class="player">${match.players[3]?.name || 'Player 4'}</div>
+              <div class="team">
+                <div class="team-label">Team 2</div>
+                <div class="players">
+                  <div class="player">${match.players[2]?.name || 'P3'}</div>
+                  <div class="player">${match.players[3]?.name || 'P4'}</div>
+                </div>
               </div>
             </div>
 
             <div class="score-section">
               <div class="score-input">
-                <span>Team 1 Score:</span>
+                <div class="score-label">T1</div>
                 <div class="score-box"></div>
               </div>
               <div class="score-input">
-                <span>Team 2 Score:</span>
+                <div class="score-label">T2</div>
                 <div class="score-box"></div>
               </div>
             </div>
@@ -279,6 +331,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
       html += `</div></div>`;
     });
 
+    html += `</div>`;
     return html;
   };
 
