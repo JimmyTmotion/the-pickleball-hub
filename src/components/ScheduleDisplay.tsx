@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Calendar, Users, TrendingUp, UserX, ChevronDown, Play, Edit, RotateCcw } from 'lucide-react';
+import { Calendar, Users, TrendingUp, UserX, Play, Edit, RotateCcw, BarChart3 } from 'lucide-react';
 import { Schedule, Player } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import ScheduleDisplayOptions from './ScheduleDisplayOptions';
@@ -16,15 +15,18 @@ import { toast } from '@/hooks/use-toast';
 interface ScheduleDisplayProps {
   schedule: Schedule;
   scheduleName?: string;
-  scheduleId?: string; // Add scheduleId prop
+  scheduleId?: string;
   onRegenerateSchedule?: () => void;
   onPlayerSwap?: (updatedSchedule: Schedule) => void;
 }
+
+type ViewType = 'matches' | 'statistics' | 'analytics';
 
 const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName, scheduleId, onRegenerateSchedule, onPlayerSwap }) => {
   const [viewMode, setViewMode] = useState<'standard' | 'printable'>('standard');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
+  const [activeView, setActiveView] = useState<ViewType>('matches');
   const navigate = useNavigate();
   const { matches, playerStats, roundSittingOut } = currentSchedule;
 
@@ -84,7 +86,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
       state: {
         schedule: currentSchedule,
         name: scheduleName || 'Tournament',
-        scheduleId: scheduleId // Pass the scheduleId if available
+        scheduleId: scheduleId
       }
     });
   };
@@ -184,6 +186,125 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
     );
   }
 
+  const renderMatchesView = () => (
+    <div className="space-y-6">
+      {Object.entries(matchesByRound).map(([round, roundMatches]) => (
+        <div key={round} className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-gray-800">
+              Round {round}
+            </h3>
+            {roundSittingOut[parseInt(round)] && roundSittingOut[parseInt(round)].length > 0 && (
+              <div className="flex items-center gap-2">
+                <UserX className="h-4 w-4 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  Sitting out: {roundSittingOut[parseInt(round)].map(p => p.name).join(', ')}
+                </span>
+              </div>
+            )}
+          </div>
+          
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {roundMatches.map((match) => (
+              <Card key={match.id} className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      Court {match.court}
+                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingMatch(editingMatch === match.id ? null : match.id)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <div className="text-sm text-gray-500">
+                        Match #{match.id}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {editingMatch === match.id ? (
+                    <PlayerSwapper
+                      players={match.players}
+                      onSwap={(fromIndex, toIndex) => handlePlayerSwap(match.id, fromIndex, toIndex)}
+                      className="mt-2"
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        {match.players.map((player, index) => (
+                          <div 
+                            key={player.id}
+                            className={`text-sm p-2 rounded ${
+                              index < 2 
+                                ? 'bg-blue-50 text-blue-700' 
+                                : 'bg-orange-50 text-orange-700'
+                            }`}
+                          >
+                            {player.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          
+          {Object.keys(matchesByRound).length > 1 && (
+            <Separator className="my-4" />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderStatisticsView = () => (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {playerStats.map((stat) => (
+        <Card key={stat.playerId} className="border border-gray-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-600" />
+                <span className="font-medium">{stat.playerName}</span>
+              </div>
+            </div>
+            
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Matches:</span>
+                <Badge variant="secondary">{stat.matchCount}</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderAnalyticsView = () => (
+    <PlayerAnalytics schedule={currentSchedule} />
+  );
+
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'matches':
+        return renderMatchesView();
+      case 'statistics':
+        return renderStatisticsView();
+      case 'analytics':
+        return renderAnalyticsView();
+      default:
+        return renderMatchesView();
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Controls Panel */}
@@ -214,165 +335,47 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
         </CardContent>
       </Card>
 
-      {/* Schedule Overview */}
-      <Collapsible>
-        <Card>
-          <CollapsibleTrigger className="w-full">
-            <CardHeader className="hover:bg-muted/50 transition-colors">
-              <CardTitle className="flex items-center justify-between text-xl font-bold text-blue-700">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Match Schedule
-                </div>
-                <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
-              </CardTitle>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent>
-              <div className="space-y-6">
-                {Object.entries(matchesByRound).map(([round, roundMatches]) => (
-                  <div key={round} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-semibold text-gray-800">
-                        Round {round}
-                      </h3>
-                      {roundSittingOut[parseInt(round)] && roundSittingOut[parseInt(round)].length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <UserX className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">
-                            Sitting out: {roundSittingOut[parseInt(round)].map(p => p.name).join(', ')}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                      {roundMatches.map((match) => (
-                        <Card key={match.id} className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Court {match.court}
-                              </Badge>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setEditingMatch(editingMatch === match.id ? null : match.id)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <div className="text-sm text-gray-500">
-                                  Match #{match.id}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {editingMatch === match.id ? (
-                              <PlayerSwapper
-                                players={match.players}
-                                onSwap={(fromIndex, toIndex) => handlePlayerSwap(match.id, fromIndex, toIndex)}
-                                className="mt-2"
-                              />
-                            ) : (
-                              <div className="space-y-2">
-                                <div className="grid grid-cols-2 gap-2">
-                                  {match.players.map((player, index) => (
-                                    <div 
-                                      key={player.id}
-                                      className={`text-sm p-2 rounded ${
-                                        index < 2 
-                                          ? 'bg-blue-50 text-blue-700' 
-                                          : 'bg-orange-50 text-orange-700'
-                                      }`}
-                                    >
-                                      {player.name}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                    
-                    {Object.keys(matchesByRound).length > 1 && (
-                      <Separator className="my-4" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+      {/* Navigation Buttons */}
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          variant={activeView === 'matches' ? 'default' : 'outline'}
+          onClick={() => setActiveView('matches')}
+          className="flex items-center gap-2"
+        >
+          <Calendar className="h-4 w-4" />
+          Match Schedule
+        </Button>
+        <Button
+          variant={activeView === 'statistics' ? 'default' : 'outline'}
+          onClick={() => setActiveView('statistics')}
+          className="flex items-center gap-2"
+        >
+          <TrendingUp className="h-4 w-4" />
+          Player Statistics
+        </Button>
+        <Button
+          variant={activeView === 'analytics' ? 'default' : 'outline'}
+          onClick={() => setActiveView('analytics')}
+          className="flex items-center gap-2"
+        >
+          <BarChart3 className="h-4 w-4" />
+          Partnership & Opponent Analytics
+        </Button>
+      </div>
 
-      {/* Player Statistics */}
-      <Collapsible>
-        <Card>
-          <CollapsibleTrigger className="w-full">
-            <CardHeader className="hover:bg-muted/50 transition-colors">
-              <CardTitle className="flex items-center justify-between text-xl font-bold text-green-700">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Player Statistics
-                </div>
-                <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
-              </CardTitle>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {playerStats.map((stat) => (
-                  <Card key={stat.playerId} className="border border-gray-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-blue-600" />
-                          <span className="font-medium">{stat.playerName}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Matches:</span>
-                          <Badge variant="secondary">{stat.matchCount}</Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-
-      {/* Player Analytics */}
-      <Collapsible>
-        <Card>
-          <CollapsibleTrigger className="w-full">
-            <CardHeader className="hover:bg-muted/50 transition-colors">
-              <CardTitle className="flex items-center justify-between text-xl font-bold text-purple-700">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Partnership & Opponent Analytics
-                </div>
-                <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
-              </CardTitle>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent>
-              <PlayerAnalytics schedule={currentSchedule} />
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+      {/* Main Content Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-gray-800">
+            {activeView === 'matches' && 'Match Schedule'}
+            {activeView === 'statistics' && 'Player Statistics'}
+            {activeView === 'analytics' && 'Partnership & Opponent Analytics'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {renderActiveView()}
+        </CardContent>
+      </Card>
     </div>
   );
 };
