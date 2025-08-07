@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Users, TrendingUp, UserX, Edit, BarChart3 } from 'lucide-react';
-import { Schedule, Player } from '@/types/schedule';
+import { Schedule, Player, SavedSchedule } from '@/types/schedule';
 import PlayerAnalytics from './PlayerAnalytics';
 import PlayerSwapper from './PlayerSwapper';
+import BeginTournamentButton from './BeginTournamentButton';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
@@ -13,13 +14,21 @@ interface ScheduleDisplayProps {
   schedule: Schedule;
   scheduleName?: string;
   scheduleId?: string;
+  savedSchedule?: SavedSchedule; // Add this prop for the Begin Tournament functionality
   onRegenerateSchedule?: () => void;
   onPlayerSwap?: (updatedSchedule: Schedule) => void;
 }
 
 type ViewType = 'matches' | 'statistics' | 'analytics';
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName, scheduleId, onRegenerateSchedule, onPlayerSwap }) => {
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ 
+  schedule, 
+  scheduleName, 
+  scheduleId, 
+  savedSchedule,
+  onRegenerateSchedule, 
+  onPlayerSwap 
+}) => {
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
   const [activeView, setActiveView] = useState<ViewType>('matches');
@@ -184,32 +193,43 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
 
   return (
     <div className="space-y-6">
-      {/* Navigation Buttons */}
-      <div className="flex gap-2 flex-wrap">
-        <Button
-          variant={activeView === 'matches' ? 'default' : 'outline'}
-          onClick={() => setActiveView('matches')}
-          className="flex items-center gap-2"
-        >
-          <Calendar className="h-4 w-4" />
-          Match Schedule
-        </Button>
-        <Button
-          variant={activeView === 'statistics' ? 'default' : 'outline'}
-          onClick={() => setActiveView('statistics')}
-          className="flex items-center gap-2"
-        >
-          <TrendingUp className="h-4 w-4" />
-          Player Statistics
-        </Button>
-        <Button
-          variant={activeView === 'analytics' ? 'default' : 'outline'}
-          onClick={() => setActiveView('analytics')}
-          className="flex items-center gap-2"
-        >
-          <BarChart3 className="h-4 w-4" />
-          Partnership & Opponent Analytics
-        </Button>
+      {/* Navigation Buttons with Begin Tournament */}
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant={activeView === 'matches' ? 'default' : 'outline'}
+            onClick={() => setActiveView('matches')}
+            className="flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Match Schedule
+          </Button>
+          <Button
+            variant={activeView === 'statistics' ? 'default' : 'outline'}
+            onClick={() => setActiveView('statistics')}
+            className="flex items-center gap-2"
+          >
+            <TrendingUp className="h-4 w-4" />
+            Player Statistics
+          </Button>
+          <Button
+            variant={activeView === 'analytics' ? 'default' : 'outline'}
+            onClick={() => setActiveView('analytics')}
+            className="flex items-center gap-2"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Partnership & Opponent Analytics
+          </Button>
+        </div>
+        
+        {/* Begin Tournament Button - only show if savedSchedule is provided */}
+        {savedSchedule && (
+          <BeginTournamentButton 
+            schedule={savedSchedule}
+            variant="default"
+            className="bg-green-600 hover:bg-green-700"
+          />
+        )}
       </div>
 
       {/* Main Content Card */}
