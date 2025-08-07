@@ -57,7 +57,7 @@ interface FAQ {
 const ClubManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [availableClubs, setAvailableClubs] = useState<Club[]>([]);
   const [userApplications, setUserApplications] = useState<Set<string>>(new Set());
@@ -79,6 +79,9 @@ const ClubManagement = () => {
     logo_url: ''
   });
   const [copiedToken, setCopiedToken] = useState(false);
+  
+  // Add new state for main section tabs
+  const [mainSection, setMainSection] = useState('your-clubs'); // 'your-clubs' or 'join-club'
 
   useEffect(() => {
     if (user) {
@@ -88,8 +91,14 @@ const ClubManagement = () => {
   }, [user]);
 
   useEffect(() => {
-    // Handle URL parameters for tab selection
+    // Handle URL parameters for both main section and club tabs
+    const section = searchParams.get('section');
     const tab = searchParams.get('tab');
+    
+    if (section && ['your-clubs', 'join-club'].includes(section)) {
+      setMainSection(section);
+    }
+    
     if (tab && ['overview', 'results', 'members', 'notices', 'faqs', 'subgroups', 'settings'].includes(tab)) {
       setActiveTab(tab);
     }
@@ -100,6 +109,28 @@ const ClubManagement = () => {
       fetchClubData();
     }
   }, [selectedClub]);
+
+  // Helper function to update URL params
+  const updateSearchParams = (section: string, tab?: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('section', section);
+    if (tab) {
+      newParams.set('tab', tab);
+    } else {
+      newParams.delete('tab');
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleMainSectionChange = (section: string) => {
+    setMainSection(section);
+    updateSearchParams(section);
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    updateSearchParams(mainSection, tab);
+  };
 
   const fetchUserClubs = async () => {
     if (!user) return;
@@ -647,35 +678,61 @@ const ClubManagement = () => {
       <Navigation />
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="space-y-8">
-          {/* Single full-width block containing both sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Your Clubs */}
-            <UserClubsList
-              clubs={clubs}
-              selectedClub={selectedClub}
-              userId={user?.id}
-              loading={loading}
-              activeTab={activeTab}
-              showCreateForm={showCreateForm}
-              clubForm={clubForm}
-              onSelectClub={setSelectedClub}
-              onTabChange={setActiveTab}
-              onShowCreateForm={setShowCreateForm}
-              onClubFormChange={(field, value) => 
-                setClubForm(prev => ({ ...prev, [field]: value }))
-              }
-              onCreateClub={createClub}
-            >
-              {renderTabContent()}
-            </UserClubsList>
+          {/* Main Section Tabs */}
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+              <button
+                onClick={() => handleMainSectionChange('your-clubs')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  mainSection === 'your-clubs'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Your Clubs
+              </button>
+              <button
+                onClick={() => handleMainSectionChange('join-club')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  mainSection === 'join-club'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Join a Club
+              </button>
+            </nav>
+          </div>
 
-            {/* Right Column - Join a Club */}
-            <AvailableClubsList
-              clubs={availableClubs}
-              userApplications={userApplications}
-              loading={availableClubsLoading}
-              onApplyToJoinClub={applyToJoinClub}
-            />
+          {/* Full Width Content Area */}
+          <div className="w-full">
+            {mainSection === 'your-clubs' ? (
+              <UserClubsList
+                clubs={clubs}
+                selectedClub={selectedClub}
+                userId={user?.id}
+                loading={loading}
+                activeTab={activeTab}
+                showCreateForm={showCreateForm}
+                clubForm={clubForm}
+                onSelectClub={setSelectedClub}
+                onTabChange={handleTabChange}
+                onShowCreateForm={setShowCreateForm}
+                onClubFormChange={(field, value) => 
+                  setClubForm(prev => ({ ...prev, [field]: value }))
+                }
+                onCreateClub={createClub}
+              >
+                {renderTabContent()}
+              </UserClubsList>
+            ) : (
+              <AvailableClubsList
+                clubs={availableClubs}
+                userApplications={userApplications}
+                loading={availableClubsLoading}
+                onApplyToJoinClub={applyToJoinClub}
+              />
+            )}
           </div>
         </div>
       </div>
