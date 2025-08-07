@@ -18,6 +18,7 @@ import MatchResultInput from '@/components/MatchResultInput';
 import LeagueTable from '@/components/LeagueTable';
 import PlayerNameEditor from '@/components/PlayerNameEditor';
 import AnimatedSection from '@/components/AnimatedSection';
+import BeginTournamentButton from '@/components/BeginTournamentButton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -313,18 +314,6 @@ const ScheduleHistory: React.FC = () => {
     document.body.removeChild(a);
   };
 
-  const handleBeginTournament = () => {
-    if (selectedSchedule) {
-      navigate('/tournament', {
-        state: {
-          schedule: selectedSchedule.schedule,
-          name: selectedSchedule.name,
-          scheduleId: selectedSchedule.id
-        }
-      });
-    }
-  };
-
   const renderTabContent = () => {
     if (!selectedSchedule) return null;
 
@@ -334,6 +323,7 @@ const ScheduleHistory: React.FC = () => {
           <ScheduleDisplay 
             schedule={selectedSchedule.schedule} 
             scheduleId={selectedSchedule.id}
+            savedSchedule={selectedSchedule}
             onPlayerSwap={handlePlayerSwap}
           />
         );
@@ -342,13 +332,7 @@ const ScheduleHistory: React.FC = () => {
         return (
           <div className="space-y-4">
             <div className="flex justify-end mb-4">
-              <Button 
-                onClick={handleBeginTournament}
-                className="flex items-center gap-2"
-              >
-                <Play className="h-4 w-4" />
-                Begin Tournament
-              </Button>
+              <BeginTournamentButton schedule={selectedSchedule} />
             </div>
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
