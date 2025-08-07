@@ -11,7 +11,7 @@ import { getSavedSchedules, deleteSchedule, updateMatchResult, updatePlayerNames
 import { SavedSchedule, MatchResult } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
 import { checkMigrationStatus, runResultsMigration } from '@/utils/migrateResults';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
 import ScheduleDisplay from '@/components/ScheduleDisplay';
 import MatchResultInput from '@/components/MatchResultInput';
@@ -38,6 +38,7 @@ const ScheduleHistory: React.FC = () => {
   const [activeTab, setActiveTab] = React.useState('schedule');
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   React.useEffect(() => {
     const loadSchedules = async () => {
@@ -120,6 +121,22 @@ const ScheduleHistory: React.FC = () => {
       setActiveTab("schedule");
     }
   }, [selectedSchedule]);
+
+  // Handle navigation from Tournament page
+  React.useEffect(() => {
+    const locationState = location.state as { selectedScheduleId?: string };
+    
+    if (locationState?.selectedScheduleId && savedSchedules.length > 0) {
+      // Find and select the schedule that was passed from Tournament
+      const scheduleToSelect = savedSchedules.find(s => s.id === locationState.selectedScheduleId);
+      if (scheduleToSelect) {
+        setSelectedSchedule(scheduleToSelect);
+      }
+      
+      // Clear the state to prevent re-triggering
+      navigate('/history', { replace: true, state: undefined });
+    }
+  }, [location.state, savedSchedules, navigate]);
 
   const handleDelete = async (id: string) => {
     await deleteSchedule(id);
