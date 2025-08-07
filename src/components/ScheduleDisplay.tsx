@@ -113,7 +113,6 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
             }
             .round-section {
               margin-bottom: 15px;
-              page-break-inside: avoid;
             }
             .round-header {
               font-size: 14px;
@@ -268,12 +267,9 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
       <div class="rounds-container">
     `;
 
-    roundEntries.forEach(([round, roundMatches], roundIndex) => {
-      // Add page break every 5 rounds (except for the first round)
-      const pageBreakClass = roundIndex > 0 && roundIndex % 5 === 0 ? 'page-break' : '';
-      
+    roundEntries.forEach(([round, roundMatches]) => {
       html += `
-        <div class="round-section ${pageBreakClass}">
+        <div class="round-section">
           <div class="round-header">Round ${round}</div>
       `;
 
