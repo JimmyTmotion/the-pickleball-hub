@@ -6,7 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, BarChart3, Edit, Check, X, Building2, UserPlus, Play } from 'lucide-react';
+import { Trash2, Download, Calendar, Users, MapPin, Hash, ArrowLeft, Trophy, Edit, Check, X, Building2, UserPlus, Play } from 'lucide-react';
 import { getSavedSchedules, deleteSchedule, updateMatchResult, updatePlayerNames, updateScheduleName } from '@/utils/scheduleStorage';
 import { SavedSchedule, MatchResult } from '@/types/schedule';
 import { exportScheduleToCSV } from '@/utils/scheduleGenerator';
@@ -16,7 +16,6 @@ import Navigation from '@/components/ui/navigation';
 import ScheduleDisplay from '@/components/ScheduleDisplay';
 import MatchResultInput from '@/components/MatchResultInput';
 import LeagueTable from '@/components/LeagueTable';
-import OverallLeaderboard from '@/components/OverallLeaderboard';
 import PlayerNameEditor from '@/components/PlayerNameEditor';
 import AnimatedSection from '@/components/AnimatedSection';
 import { supabase } from '@/integrations/supabase/client';
@@ -483,9 +482,6 @@ const ScheduleHistory: React.FC = () => {
           </div>
         );
 
-      case 'stats':
-        return <OverallLeaderboard savedSchedules={[selectedSchedule]} />;
-
       case 'edit':
         return (
           <PlayerNameEditor 
@@ -552,17 +548,6 @@ const ScheduleHistory: React.FC = () => {
                     >
                       <Trophy className="h-4 w-4" />
                       League Table
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('stats')}
-                      className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                        activeTab === 'stats'
-                          ? 'border-blue-500 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      Overall Stats
                     </button>
                     <button
                       onClick={() => setActiveTab('edit')}
