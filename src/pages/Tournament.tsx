@@ -12,7 +12,7 @@ import LeagueTable from '@/components/LeagueTable';
 import AnimatedSection from '@/components/AnimatedSection';
 import PlayerSwapper from '@/components/PlayerSwapper';
 import CountdownTimer from '@/components/CountdownTimer';
-import { updateSchedule } from '@/utils/scheduleStorage';
+import { updateSchedule, getSavedSchedules } from '@/utils/scheduleStorage';
 import { saveMatchResult } from '@/utils/matchResults';
 
 interface TournamentState {
@@ -54,6 +54,20 @@ const Tournament = () => {
   
   // Check if current round is completed (all matches have results)
   const isCurrentRoundCompleted = currentRoundMatches.every(match => match.result?.completed);
+
+  const handleBackToSchedule = async () => {
+    if (tournamentData.scheduleId) {
+      // Navigate back to the specific schedule in ScheduleHistory
+      navigate('/history', { 
+        state: { 
+          selectedScheduleId: tournamentData.scheduleId 
+        } 
+      });
+    } else {
+      // Fallback to scheduler if no scheduleId
+      navigate('/scheduler');
+    }
+  };
 
   const handleTimerComplete = () => {
     setIsAlarmActive(true);
@@ -301,9 +315,9 @@ const Tournament = () => {
           </AnimatedSection>
 
           <AnimatedSection animation="fade-up" delay={200} className="text-center">
-            <Button onClick={() => navigate('/scheduler')} className="flex items-center gap-2">
+            <Button onClick={handleBackToSchedule} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back to Scheduler
+              Back to Schedule
             </Button>
           </AnimatedSection>
         </div>
@@ -334,9 +348,9 @@ const Tournament = () => {
         {/* Header */}
         <AnimatedSection animation="fade-up" className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate('/scheduler')}>
+            <Button variant="outline" onClick={handleBackToSchedule}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Scheduler
+              Back to Schedule
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{tournamentData.name}</h1>
