@@ -399,8 +399,8 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
                             key={player.id}
                             className={`text-sm p-2 rounded ${
                               index < 2 
-                                ? 'bg-blue-50 text-blue-700' 
-                                : 'bg-orange-50 text-orange-700'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                                : 'bg-orange-50 text-orange-700 border border-orange-200'
                             }`}
                           >
                             {player.name}
