@@ -473,7 +473,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
             onClick={() => setActiveView('matches')}
             className={`flex items-center gap-2 ${
               activeView === 'matches' 
-                ? 'bg-white shadow-sm' 
+                ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700' 
                 : 'hover:bg-gray-200'
             }`}
             size="sm"
@@ -486,7 +486,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
             onClick={() => setActiveView('statistics')}
             className={`flex items-center gap-2 ${
               activeView === 'statistics' 
-                ? 'bg-white shadow-sm' 
+                ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700' 
                 : 'hover:bg-gray-200'
             }`}
             size="sm"
@@ -499,7 +499,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
             onClick={() => setActiveView('analytics')}
             className={`flex items-center gap-2 ${
               activeView === 'analytics' 
-                ? 'bg-white shadow-sm' 
+                ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700' 
                 : 'hover:bg-gray-200'
             }`}
             size="sm"
