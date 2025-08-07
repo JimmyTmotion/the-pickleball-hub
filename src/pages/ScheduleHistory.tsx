@@ -23,11 +23,9 @@ interface ScheduleDisplayProps {
 type ViewType = 'matches' | 'statistics' | 'analytics';
 
 const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleName, scheduleId, onRegenerateSchedule, onPlayerSwap }) => {
-  const [viewMode, setViewMode] = useState<'standard' | 'printable'>('standard');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
   const [activeView, setActiveView] = useState<ViewType>('matches');
-  const navigate = useNavigate();
   const { matches, playerStats, roundSittingOut } = currentSchedule;
 
   // Group matches by round
@@ -67,16 +65,6 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, scheduleNam
     toast({
       title: "Players Swapped",
       description: "Match lineup has been updated successfully.",
-    });
-  };
-
-  const handleBeginTournament = () => {
-    navigate('/tournament', {
-      state: {
-        schedule: currentSchedule,
-        name: scheduleName || 'Tournament',
-        scheduleId: scheduleId
-      }
     });
   };
 
