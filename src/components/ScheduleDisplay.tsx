@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, Users, TrendingUp, UserX, Edit, BarChart3 } from 'lucide-react';
+import { Calendar, Users, TrendingUp, UserX, Edit, BarChart3, Printer } from 'lucide-react';
 import { Schedule, Player, SavedSchedule } from '@/types/schedule';
 import PlayerAnalytics from './PlayerAnalytics';
 import PlayerSwapper from './PlayerSwapper';
@@ -45,14 +45,14 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
   }, {} as Record<number, typeof matches>);
 
   const handlePlayerSwap = (matchId: number, fromIndex: number, toIndex: number) => {
-    const updatedMatches = matches.map(match => {
+    const updatedMatches = matches.reduce((acc, match) => {
       if (match.id === matchId) {
         const newPlayers = [...match.players];
         [newPlayers[fromIndex], newPlayers[toIndex]] = [newPlayers[toIndex], newPlayers[fromIndex]];
-        return { ...match, players: newPlayers };
+        return [...acc, { ...match, players: newPlayers }];
       }
-      return match;
-    });
+      return [...acc, match];
+    }, [] as typeof matches);
 
     const updatedSchedule = {
       ...currentSchedule,
@@ -70,6 +70,216 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
       title: "Players Swapped",
       description: "Match lineup has been updated successfully.",
     });
+  };
+
+  const handlePrintSchedule = () => {
+    const printContent = generatePrintableSchedule();
+    const printWindow = window.open('', '_blank');
+    
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${scheduleName || 'Tournament Schedule'}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #000;
+              background: #fff;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #000;
+              padding-bottom: 15px;
+            }
+            .title {
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 10px;
+            }
+            .subtitle {
+              font-size: 14px;
+              color: #666;
+            }
+            .round-section {
+              margin-bottom: 40px;
+              page-break-inside: avoid;
+            }
+            .round-header {
+              font-size: 18px;
+              font-weight: bold;
+              margin-bottom: 15px;
+              padding: 8px;
+              background-color: #f0f0f0;
+              border: 1px solid #ccc;
+            }
+            .matches-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+              gap: 15px;
+            }
+            .match-card {
+              border: 2px solid #333;
+              padding: 15px;
+              margin-bottom: 15px;
+              background-color: #fff;
+            }
+            .match-header {
+              font-weight: bold;
+              text-align: center;
+              margin-bottom: 10px;
+              font-size: 16px;
+            }
+            .team {
+              margin: 10px 0;
+              padding: 8px;
+              border: 1px solid #666;
+              background-color: #f9f9f9;
+            }
+            .team-label {
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .players {
+              margin: 5px 0;
+            }
+            .player {
+              margin: 2px 0;
+            }
+            .score-section {
+              margin-top: 15px;
+              padding-top: 10px;
+              border-top: 1px dashed #666;
+            }
+            .score-input {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin: 5px 0;
+            }
+            .score-box {
+              width: 40px;
+              height: 30px;
+              border: 2px solid #333;
+              display: inline-block;
+              margin-left: 10px;
+            }
+            .vs {
+              text-align: center;
+              font-weight: bold;
+              font-size: 18px;
+              margin: 10px 0;
+            }
+            .sitting-out {
+              background-color: #fff3cd;
+              border: 1px solid #ffc107;
+              padding: 10px;
+              margin-top: 15px;
+              border-radius: 4px;
+            }
+            .sitting-out-label {
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            @media print {
+              body { margin: 10px; }
+              .match-card { page-break-inside: avoid; }
+              .round-section { page-break-after: auto; }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+
+    toast({
+      title: "Print Schedule",
+      description: "Opening printable schedule in new window...",
+    });
+  };
+
+  const generatePrintableSchedule = () => {
+    let html = `
+      <div class="header">
+        <div class="title">${scheduleName || 'Tournament Schedule'}</div>
+        <div class="subtitle">Manual Score Sheet</div>
+      </div>
+    `;
+
+    Object.entries(matchesByRound).forEach(([round, roundMatches]) => {
+      html += `
+        <div class="round-section">
+          <div class="round-header">Round ${round}</div>
+      `;
+
+      // Add sitting out players for this round
+      if (roundSittingOut[parseInt(round)] && roundSittingOut[parseInt(round)].length > 0) {
+        html += `
+          <div class="sitting-out">
+            <div class="sitting-out-label">Sitting Out This Round:</div>
+            ${roundSittingOut[parseInt(round)].map(p => p.name).join(', ')}
+          </div>
+        `;
+      }
+
+      html += `<div class="matches-grid">`;
+
+      roundMatches.forEach((match) => {
+        html += `
+          <div class="match-card">
+            <div class="match-header">Court ${match.court} - Match #${match.id}</div>
+            
+            <div class="team">
+              <div class="team-label">Team 1</div>
+              <div class="players">
+                <div class="player">${match.players[0]?.name || 'Player 1'}</div>
+                <div class="player">${match.players[1]?.name || 'Player 2'}</div>
+              </div>
+            </div>
+
+            <div class="vs">VS</div>
+
+            <div class="team">
+              <div class="team-label">Team 2</div>
+              <div class="players">
+                <div class="player">${match.players[2]?.name || 'Player 3'}</div>
+                <div class="player">${match.players[3]?.name || 'Player 4'}</div>
+              </div>
+            </div>
+
+            <div class="score-section">
+              <div class="score-input">
+                <span>Team 1 Score:</span>
+                <div class="score-box"></div>
+              </div>
+              <div class="score-input">
+                <span>Team 2 Score:</span>
+                <div class="score-box"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></div>`;
+    });
+
+    return html;
   };
 
   const renderMatchesView = () => (
@@ -235,11 +445,25 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
       {/* Main Content Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-gray-800">
-            {activeView === 'matches' && 'Match Schedule'}
-            {activeView === 'statistics' && 'Player Statistics'}
-            {activeView === 'analytics' && 'Partnership & Opponent Analytics'}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-bold text-gray-800">
+              {activeView === 'matches' && 'Match Schedule'}
+              {activeView === 'statistics' && 'Player Statistics'}
+              {activeView === 'analytics' && 'Partnership & Opponent Analytics'}
+            </CardTitle>
+            
+            {/* Print button - only show in matches view */}
+            {activeView === 'matches' && (
+              <Button
+                variant="outline"
+                onClick={handlePrintSchedule}
+                className="flex items-center gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Print Schedule
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {renderActiveView()}
