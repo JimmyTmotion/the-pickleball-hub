@@ -314,6 +314,8 @@ const ScheduleHistory: React.FC = () => {
     document.body.removeChild(a);
   };
 
+  const [scheduleSubTab, setScheduleSubTab] = React.useState('matches');
+
   const renderTabContent = () => {
     if (!selectedSchedule) return null;
 
@@ -321,8 +323,40 @@ const ScheduleHistory: React.FC = () => {
       case 'schedule':
         return (
           <div className="space-y-6">
+            {/* Sub-tab navigation for Schedule */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Match Schedule</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setScheduleSubTab('matches')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    scheduleSubTab === 'matches'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Match Schedule
+                </button>
+                <button
+                  onClick={() => setScheduleSubTab('stats')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    scheduleSubTab === 'stats'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Player Statistics
+                </button>
+                <button
+                  onClick={() => setScheduleSubTab('analytics')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    scheduleSubTab === 'analytics'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Partnership & Opponent Analytics
+                </button>
+              </div>
               <Button
                 onClick={() => handleDownload(selectedSchedule)}
                 className="flex items-center gap-2"
@@ -332,11 +366,29 @@ const ScheduleHistory: React.FC = () => {
                 Download Schedule CSV
               </Button>
             </div>
-            <ScheduleDisplay 
-              schedule={selectedSchedule.schedule} 
-              scheduleId={selectedSchedule.id}
-              onPlayerSwap={handlePlayerSwap}
-            />
+
+            {/* Content card based on selected sub-tab */}
+            <Card>
+              <CardContent className="p-6">
+                {scheduleSubTab === 'matches' && (
+                  <ScheduleDisplay 
+                    schedule={selectedSchedule.schedule} 
+                    scheduleId={selectedSchedule.id}
+                    onPlayerSwap={handlePlayerSwap}
+                  />
+                )}
+                {scheduleSubTab === 'stats' && (
+                  <div className="text-center py-8 text-gray-500">
+                    Player Statistics content would go here
+                  </div>
+                )}
+                {scheduleSubTab === 'analytics' && (
+                  <div className="text-center py-8 text-gray-500">
+                    Partnership & Opponent Analytics content would go here
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         );
 
