@@ -6,7 +6,7 @@ import { Calendar, Users, TrendingUp, UserX, Edit, BarChart3 } from 'lucide-reac
 import { Schedule, Player, SavedSchedule } from '@/types/schedule';
 import PlayerAnalytics from './PlayerAnalytics';
 import PlayerSwapper from './PlayerSwapper';
-import BeginTournamentButton from './BeginTournamentButton';
+import BeginTournamentButton from '@/components/BeginTournamentButton';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
