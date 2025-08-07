@@ -278,6 +278,9 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
     `;
 
     roundEntries.forEach(([round, roundMatches]) => {
+      // Sort matches by court number within each round
+      const sortedMatches = [...roundMatches].sort((a, b) => a.court - b.court);
+      
       html += `
         <div class="round-section">
           <div class="round-header">Round ${round}</div>
@@ -295,7 +298,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
 
       html += `<div class="matches-row">`;
 
-      roundMatches.forEach((match) => {
+      sortedMatches.forEach((match) => {
         html += `
           <div class="match-card">
             <div class="match-header">Court ${match.court} - #${match.id}</div>
