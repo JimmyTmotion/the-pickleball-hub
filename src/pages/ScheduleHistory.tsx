@@ -121,7 +121,6 @@ const ScheduleHistory: React.FC = () => {
     }
   }, [selectedSchedule]);
 
-  // Keep all your existing handler functions unchanged...
   const handleDelete = async (id: string) => {
     await deleteSchedule(id);
     const schedules = await getSavedSchedules();
@@ -581,7 +580,7 @@ const ScheduleHistory: React.FC = () => {
     );
   }
 
-  // Main schedule history view remains the same...
+  // Main schedule history view
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
       <Navigation />
@@ -612,283 +611,267 @@ const ScheduleHistory: React.FC = () => {
                 </CardContent>
               </Card>
             ) : (
-              <>
-                {/* Overall Leaderboard Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Overall Leaderboard
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <OverallLeaderboard savedSchedules={savedSchedules} />
-                  </CardContent>
-                </Card>
-                
-                {/* Individual Schedules */}
-                <div className="space-y-4">
-                  <h2 className="text-2xl font-bold text-gray-800">Individual Schedules</h2>
-                  <div className="grid gap-4">
-                    {savedSchedules.map((schedule) => {
-                      const completedMatches = schedule.schedule.matches.filter(m => m.result?.completed).length;
-                      return (
-                        <Card key={schedule.id} className="hover:shadow-lg transition-shadow">
-                          <CardHeader>
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                {editingScheduleId === schedule.id ? (
-                                  <div className="flex items-center gap-2">
-                                    <Input
-                                      value={editingName}
-                                      onChange={(e) => setEditingName(e.target.value)}
-                                      className="text-lg font-semibold"
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleSaveScheduleName(schedule.id);
-                                        } else if (e.key === 'Escape') {
-                                          handleCancelEdit();
-                                        }
-                                      }}
-                                      autoFocus
-                                    />
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => handleSaveScheduleName(schedule.id)}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <Check className="h-4 w-4 text-green-600" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={handleCancelEdit}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <X className="h-4 w-4 text-red-600" />
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <CardTitle className="text-lg">{schedule.name}</CardTitle>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => handleEditScheduleName(schedule)}
-                                      className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                                    >
-                                      <Edit className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  Created by {schedule.createdBy?.name || 'Unknown User'}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {schedule.createdAt.toLocaleDateString()}
-                                </Badge>
-                                <Badge variant="outline" className="flex items-center gap-1">
-                                  <Hash className="h-3 w-3" />
-                                  {schedule.config.numRounds} rounds
-                                </Badge>
-                                <Badge variant="outline" className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {schedule.config.numPlayers} players
-                                </Badge>
-                                <Badge variant="outline" className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {schedule.config.numCourts} courts
-                                </Badge>
-                                {completedMatches > 0 && (
-                                  <Badge className="flex items-center gap-1">
-                                    <Trophy className="h-3 w-3" />
-                                    {completedMatches}/{schedule.schedule.matches.length} complete
-                                  </Badge>
-                                )}
-                                {schedule.club_id && (
-                                  <Badge variant="outline" className="flex items-center gap-1">
-                                    <Building2 className="h-3 w-3" />
-                                    Assigned to Club
-                                  </Badge>
-                                )}
-                              </div>
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-gray-800">Individual Schedules</h2>
+                <div className="grid gap-4">
+                  {savedSchedules.map((schedule) => {
+                    const completedMatches = schedule.schedule.matches.filter(m => m.result?.completed).length;
+                    return (
+                      <Card key={schedule.id} className="hover:shadow-lg transition-shadow">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              {editingScheduleId === schedule.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={editingName}
+                                    onChange={(e) => setEditingName(e.target.value)}
+                                    className="text-lg font-semibold"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleSaveScheduleName(schedule.id);
+                                      } else if (e.key === 'Escape') {
+                                        handleCancelEdit();
+                                      }
+                                    }}
+                                    autoFocus
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleSaveScheduleName(schedule.id)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleCancelEdit}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <X className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <CardTitle className="text-lg">{schedule.name}</CardTitle>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleEditScheduleName(schedule)}
+                                    className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Created by {schedule.createdBy?.name || 'Unknown User'}
+                              </p>
                             </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="flex items-center justify-between">
-                              <div className="text-sm text-gray-600">
-                                <p>Total matches: {schedule.schedule.matches.length}</p>
-                                <p>Completed matches: {completedMatches}</p>
-                                <p>Created: {schedule.createdAt.toLocaleString()}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setSelectedSchedule(schedule)}
-                                >
-                                  Manage & View Results
-                                </Button>
-                                
-                                {/* Show assignment info or assign button */}
-                                {schedule.club_id ? (
-                                  <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                                    <div className="flex flex-col text-xs">
-                                      <div className="flex items-center gap-1">
-                                        <Building2 className="h-3 w-3 text-blue-600" />
-                                        <span className="font-medium">{getClubName(schedule.club_id)}</span>
-                                      </div>
-                                      {schedule.subgroup_id && (
-                                        <div className="flex items-center gap-1 text-purple-600">
-                                          <UserPlus className="h-3 w-3" />
-                                          <span>{getSubgroupName(schedule.subgroup_id)}</span>
-                                        </div>
-                                      )}
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {schedule.createdAt.toLocaleDateString()}
+                              </Badge>
+                              <Badge variant="outline" className="flex items-center gap-1">
+                                <Hash className="h-3 w-3" />
+                                {schedule.config.numRounds} rounds
+                              </Badge>
+                              <Badge variant="outline" className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {schedule.config.numPlayers} players
+                              </Badge>
+                              <Badge variant="outline" className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {schedule.config.numCourts} courts
+                              </Badge>
+                              {completedMatches > 0 && (
+                                <Badge className="flex items-center gap-1">
+                                  <Trophy className="h-3 w-3" />
+                                  {completedMatches}/{schedule.schedule.matches.length} complete
+                                </Badge>
+                              )}
+                              {schedule.club_id && (
+                                <Badge variant="outline" className="flex items-center gap-1">
+                                  <Building2 className="h-3 w-3" />
+                                  Assigned to Club
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-600">
+                              <p>Total matches: {schedule.schedule.matches.length}</p>
+                              <p>Completed matches: {completedMatches}</p>
+                              <p>Created: {schedule.createdAt.toLocaleString()}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedSchedule(schedule)}
+                              >
+                                Manage & View Results
+                              </Button>
+                              
+                              {/* Show assignment info or assign button */}
+                              {schedule.club_id ? (
+                                <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                                  <div className="flex flex-col text-xs">
+                                    <div className="flex items-center gap-1">
+                                      <Building2 className="h-3 w-3 text-blue-600" />
+                                      <span className="font-medium">{getClubName(schedule.club_id)}</span>
                                     </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => handleUnassignSchedule(schedule.id)}
-                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                      title="Unassign from club"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
+                                    {schedule.subgroup_id && (
+                                      <div className="flex items-center gap-1 text-purple-600">
+                                        <UserPlus className="h-3 w-3" />
+                                        <span>{getSubgroupName(schedule.subgroup_id)}</span>
+                                      </div>
+                                    )}
                                   </div>
-                                ) : (
-                                  clubs.length > 0 && (
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => {
-                                            setAssigningScheduleId(schedule.id);
-                                            setSelectedClubId('');
-                                            setSelectedSubgroupId('');
-                                          }}
-                                          className="flex items-center gap-1"
-                                        >
-                                          <Building2 className="h-3 w-3" />
-                                          Assign to Club
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent>
-                                        <DialogHeader>
-                                          <DialogTitle>Assign Schedule to Club</DialogTitle>
-                                        </DialogHeader>
-                                        <div className="space-y-4">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleUnassignSchedule(schedule.id)}
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                    title="Unassign from club"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                clubs.length > 0 && (
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setAssigningScheduleId(schedule.id);
+                                          setSelectedClubId('');
+                                          setSelectedSubgroupId('');
+                                        }}
+                                        className="flex items-center gap-1"
+                                      >
+                                        <Building2 className="h-3 w-3" />
+                                        Assign to Club
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Assign Schedule to Club</DialogTitle>
+                                      </DialogHeader>
+                                      <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                          <Building2 className="h-4 w-4 text-blue-600" />
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Club</label>
+                                            <Select value={selectedClubId} onValueChange={setSelectedClubId}>
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select a club" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="none">No Club Assignment</SelectItem>
+                                                {clubs.map((club) => (
+                                                  <SelectItem key={club.id} value={club.id}>
+                                                    {club.name}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {selectedClubId && selectedClubId !== "none" && (
                                           <div className="flex items-center gap-2">
-                                            <Building2 className="h-4 w-4 text-blue-600" />
+                                            <UserPlus className="h-4 w-4 text-purple-600" />
                                             <div className="flex-1">
-                                              <label className="text-sm font-medium">Club</label>
-                                              <Select value={selectedClubId} onValueChange={setSelectedClubId}>
+                                              <label className="text-sm font-medium">Subgroup (Optional)</label>
+                                              <Select 
+                                                value={selectedSubgroupId} 
+                                                onValueChange={setSelectedSubgroupId}
+                                                disabled={subgroups.length === 0}
+                                              >
                                                 <SelectTrigger>
-                                                  <SelectValue placeholder="Select a club" />
+                                                  <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                  <SelectItem value="none">No Club Assignment</SelectItem>
-                                                  {clubs.map((club) => (
-                                                    <SelectItem key={club.id} value={club.id}>
-                                                      {club.name}
+                                                  <SelectItem value="none">No Subgroup Assignment</SelectItem>
+                                                  {subgroups.map((subgroup) => (
+                                                    <SelectItem key={subgroup.id} value={subgroup.id}>
+                                                      {subgroup.name}
                                                     </SelectItem>
                                                   ))}
                                                 </SelectContent>
                                               </Select>
                                             </div>
                                           </div>
+                                        )}
 
-                                          {selectedClubId && selectedClubId !== "none" && (
-                                            <div className="flex items-center gap-2">
-                                              <UserPlus className="h-4 w-4 text-purple-600" />
-                                              <div className="flex-1">
-                                                <label className="text-sm font-medium">Subgroup (Optional)</label>
-                                                <Select 
-                                                  value={selectedSubgroupId} 
-                                                  onValueChange={setSelectedSubgroupId}
-                                                  disabled={subgroups.length === 0}
-                                                >
-                                                  <SelectTrigger>
-                                                    <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    <SelectItem value="none">No Subgroup Assignment</SelectItem>
-                                                    {subgroups.map((subgroup) => (
-                                                      <SelectItem key={subgroup.id} value={subgroup.id}>
-                                                        {subgroup.name}
-                                                      </SelectItem>
-                                                    ))}
-                                                  </SelectContent>
-                                                </Select>
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          <div className="flex justify-end gap-2">
-                                            <Button variant="outline" onClick={() => setAssigningScheduleId(null)}>
-                                              Cancel
-                                            </Button>
-                                            <Button onClick={handleAssignSchedule}>
-                                              Assign Schedule
-                                            </Button>
-                                          </div>
+                                        <div className="flex justify-end gap-2">
+                                          <Button variant="outline" onClick={() => setAssigningScheduleId(null)}>
+                                            Cancel
+                                          </Button>
+                                          <Button onClick={handleAssignSchedule}>
+                                            Assign Schedule
+                                          </Button>
                                         </div>
-                                      </DialogContent>
-                                    </Dialog>
-                                  )
-                                )}
-                                
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDownload(schedule)}
-                                  className="flex items-center gap-1"
-                                >
-                                  <Download className="h-3 w-3" />
-                                  CSV
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      className="flex items-center gap-1"
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
+                                )
+                              )}
+                              
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDownload(schedule)}
+                                className="flex items-center gap-1"
+                              >
+                                <Download className="h-3 w-3" />
+                                CSV
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="flex items-center gap-1"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete the schedule "{schedule.name}" and all its match results.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDelete(schedule.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     >
-                                      <Trash2 className="h-3 w-3" />
-                                      Delete
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the schedule "{schedule.name}" and all its match results.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDelete(schedule.id)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                        Delete Schedule
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
+                                      Delete Schedule
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
-              </>
+              </div>
             )}
           </AnimatedSection>
         </div>
