@@ -520,7 +520,6 @@ const ScheduleHistory: React.FC = () => {
           <AnimatedSection animation="fade-up" delay={100} className="space-y-6">
             <Card>
               <CardHeader>
-                {/* Tab Navigation */}
                 <div className="border-b border-gray-200 -mb-6">
                   <nav className="-mb-px flex space-x-8" aria-label="Tabs">
                     <button
@@ -731,4 +730,164 @@ const ScheduleHistory: React.FC = () => {
                               
                               {/* Show assignment info or assign button */}
                               {schedule.club_id ? (
-                                <div className="flex items-center gap-2 p-2
+                                <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                                  <div className="flex flex-col text-xs">
+                                    <div className="flex items-center gap-1">
+                                      <Building2 className="h-3 w-3 text-blue-600" />
+                                      <span className="font-medium">{getClubName(schedule.club_id)}</span>
+                                    </div>
+                                    {schedule.subgroup_id && (
+                                      <div className="flex items-center gap-1 text-purple-600">
+                                        <UserPlus className="h-3 w-3" />
+                                        <span>{getSubgroupName(schedule.subgroup_id)}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleUnassignSchedule(schedule.id)}
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                    title="Unassign from club"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                clubs.length > 0 && (
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setAssigningScheduleId(schedule.id);
+                                          setSelectedClubId('');
+                                          setSelectedSubgroupId('');
+                                        }}
+                                        className="flex items-center gap-1"
+                                      >
+                                        <Building2 className="h-3 w-3" />
+                                        Assign to Club
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Assign Schedule to Club</DialogTitle>
+                                      </DialogHeader>
+                                      <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                          <Building2 className="h-4 w-4 text-blue-600" />
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Club</label>
+                                            <Select value={selectedClubId} onValueChange={setSelectedClubId}>
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select a club" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="none">No Club Assignment</SelectItem>
+                                                {clubs.map((club) => (
+                                                  <SelectItem key={club.id} value={club.id}>
+                                                    {club.name}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {selectedClubId && selectedClubId !== "none" && (
+                                          <div className="flex items-center gap-2">
+                                            <UserPlus className="h-4 w-4 text-purple-600" />
+                                            <div className="flex-1">
+                                              <label className="text-sm font-medium">Subgroup (Optional)</label>
+                                              <Select 
+                                                value={selectedSubgroupId} 
+                                                onValueChange={setSelectedSubgroupId}
+                                                disabled={subgroups.length === 0}
+                                              >
+                                                <SelectTrigger>
+                                                  <SelectValue placeholder={subgroups.length > 0 ? "Select a subgroup" : "No subgroups available"} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="none">No Subgroup Assignment</SelectItem>
+                                                  {subgroups.map((subgroup) => (
+                                                    <SelectItem key={subgroup.id} value={subgroup.id}>
+                                                      {subgroup.name}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        <div className="flex justify-end gap-2">
+                                          <Button variant="outline" onClick={() => setAssigningScheduleId(null)}>
+                                            Cancel
+                                          </Button>
+                                          <Button onClick={handleAssignSchedule}>
+                                            Assign Schedule
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
+                                )
+                              )}
+                              
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDownload(schedule)}
+                                className="flex items-center gap-1"
+                              >
+                                <Download className="h-3 w-3" />
+                                CSV
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="flex items-center gap-1"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete the schedule "{schedule.name}" and all its match results.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDelete(schedule.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete Schedule
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </AnimatedSection>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ScheduleHistory;
