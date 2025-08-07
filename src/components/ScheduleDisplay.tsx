@@ -464,73 +464,82 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Navigation Buttons with Begin Tournament */}
-      <div className="flex justify-between items-center flex-wrap gap-2">
-        <div className="flex gap-2 flex-wrap">
+    <div className="space-y-4">
+      {/* Navigation Tabs as Panels */}
+      <div className="flex justify-between items-center">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
           <Button
-            variant={activeView === 'matches' ? 'default' : 'outline'}
+            variant={activeView === 'matches' ? 'default' : 'ghost'}
             onClick={() => setActiveView('matches')}
-            className="flex items-center gap-2"
+            className={`flex items-center gap-2 ${
+              activeView === 'matches' 
+                ? 'bg-white shadow-sm' 
+                : 'hover:bg-gray-200'
+            }`}
+            size="sm"
           >
             <Calendar className="h-4 w-4" />
             Match Schedule
           </Button>
           <Button
-            variant={activeView === 'statistics' ? 'default' : 'outline'}
+            variant={activeView === 'statistics' ? 'default' : 'ghost'}
             onClick={() => setActiveView('statistics')}
-            className="flex items-center gap-2"
+            className={`flex items-center gap-2 ${
+              activeView === 'statistics' 
+                ? 'bg-white shadow-sm' 
+                : 'hover:bg-gray-200'
+            }`}
+            size="sm"
           >
             <TrendingUp className="h-4 w-4" />
             Player Statistics
           </Button>
           <Button
-            variant={activeView === 'analytics' ? 'default' : 'outline'}
+            variant={activeView === 'analytics' ? 'default' : 'ghost'}
             onClick={() => setActiveView('analytics')}
-            className="flex items-center gap-2"
+            className={`flex items-center gap-2 ${
+              activeView === 'analytics' 
+                ? 'bg-white shadow-sm' 
+                : 'hover:bg-gray-200'
+            }`}
+            size="sm"
           >
             <BarChart3 className="h-4 w-4" />
             Partnership & Opponent Analytics
           </Button>
         </div>
         
-        {/* Begin Tournament Button - only show if savedSchedule is provided */}
-        {savedSchedule && (
-          <BeginTournamentButton 
-            schedule={savedSchedule}
-            variant="default"
-            className="bg-green-600 hover:bg-green-700"
-          />
-        )}
+        {/* Begin Tournament Button and Print Button */}
+        <div className="flex items-center gap-2">
+          {/* Print button - only show in matches view */}
+          {activeView === 'matches' && (
+            <Button
+              variant="outline"
+              onClick={handlePrintSchedule}
+              className="flex items-center gap-2"
+              size="sm"
+            >
+              <Printer className="h-4 w-4" />
+              Print Schedule
+            </Button>
+          )}
+          
+          {/* Begin Tournament Button - only show if savedSchedule is provided */}
+          {savedSchedule && (
+            <BeginTournamentButton 
+              schedule={savedSchedule}
+              variant="default"
+              className="bg-green-600 hover:bg-green-700"
+              size="sm"
+            />
+          )}
+        </div>
       </div>
 
-      {/* Main Content Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-gray-800">
-              {activeView === 'matches' && 'Match Schedule'}
-              {activeView === 'statistics' && 'Player Statistics'}
-              {activeView === 'analytics' && 'Partnership & Opponent Analytics'}
-            </CardTitle>
-            
-            {/* Print button - only show in matches view */}
-            {activeView === 'matches' && (
-              <Button
-                variant="outline"
-                onClick={handlePrintSchedule}
-                className="flex items-center gap-2"
-              >
-                <Printer className="h-4 w-4" />
-                Print Schedule
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {renderActiveView()}
-        </CardContent>
-      </Card>
+      {/* Content Area - No Card Container */}
+      <div className="min-h-[500px]">
+        {renderActiveView()}
+      </div>
     </div>
   );
 };
